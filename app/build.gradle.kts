@@ -1,10 +1,11 @@
+val composeVersion by extra("1.5.4")
+val kotlinVersion by extra("1.9.20")
+val roomVersion by extra("2.6.1")
+val lifecycleVersion by extra("2.7.0")
+val mockkVersion by extra("1.13.2")
+
 buildscript {
-    extra.apply {
-        set("compose_version", "1.5.4")
-        set("kotlin_version", "1.9.20")
-        set("room_version", "2.6.1")
-        set("lifecycle_version", "2.7.0")
-    }
+
 }
 
 plugins {
@@ -58,6 +59,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("io.mockk:mockk:${mockkVersion}")
+    testImplementation("io.mockk:mockk-android:${mockkVersion}")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
