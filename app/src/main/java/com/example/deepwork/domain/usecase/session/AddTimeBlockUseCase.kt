@@ -7,27 +7,36 @@ import com.example.deepwork.domain.model.Session.Companion.MAX_TIME_BLOCKS
 import com.example.deepwork.domain.model.TimeBlock
 import kotlin.time.Duration.Companion.milliseconds
 
-class AddTimeBlockToSessionUseCase {
+class AddTimeBlockUseCase {
 
     suspend operator fun invoke(session: Session, timeBlock: TimeBlock, position: Int = -1): Result<Session> {
+        return try {
+            validate(session, timeBlock, position)
+            val updatedSession = session.copy(timeBlocks = session.timeBlocks + timeBlock)
+            Result.Success(updatedSession)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+
+    }
+    
+    private fun validate(session: Session, timeBlock: TimeBlock, position: Int) {
         if (session.timeBlocks.size >= MAX_TIME_BLOCKS) {
-            return Result.Error(SessionException.MaxTimeBlocksReached())
+            throw SessionException.MaxTimeBlocksReached()
         }
         val previousBlock = previousBlock(session, position)
         val consecutiveWorkBlocks = timeBlock is TimeBlock.WorkBlock && previousBlock is TimeBlock.WorkBlock
         if (consecutiveWorkBlocks) {
-            return Result.Error(SessionException.ConsecutiveWorkBlocks())
+            throw SessionException.ConsecutiveWorkBlocks()
         }
         val invalidBreakPosition = timeBlock is TimeBlock.BreakBlock && previousBlock !is TimeBlock.WorkBlock
         if (invalidBreakPosition) {
-            return Result.Error(SessionException.InvalidBreakPosition())
+            throw SessionException.InvalidBreakPosition()
         }
         val maxSessionDurationReached = session.timeBlocks.sumOf { it.duration.inWholeMilliseconds}.milliseconds + timeBlock.duration > Session.MAX_DURATION
         if (maxSessionDurationReached) {
-            return Result.Error(SessionException.MaxSessionDurationReached())
+            throw SessionException.MaxSessionDurationReached()
         }
-        val updatedSession = session.copy(timeBlocks = session.timeBlocks + timeBlock)
-        return Result.Success(updatedSession)
     }
 
     private fun previousBlock(session: Session, position: Int): TimeBlock? {
