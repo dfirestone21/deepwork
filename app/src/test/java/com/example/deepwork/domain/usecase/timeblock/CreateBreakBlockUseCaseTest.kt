@@ -43,3 +43,15 @@ class CreateBreakBlockUseCaseTest {
         createBreakBlock(block).getOrThrow()
     }
 }
+
+/**
+ * TODO:
+ * Implement position handling in AddTimeBlockUseCase
+ *     - if it's right after the same type (work block after work block, break after break)
+ *     should put it after the next block of a different type, ie work block after break
+ * Implement CreateSessionUseCase to handle validation of session fields
+ * Think about how to handle editing, deleting and moving time blocks in a session
+ *   RemoveTimeBlockUseCase
+ *   - would have to handle the resulting adjacent breaks (merge them or delete one?)
+ *      - probably merge and add their time (until max duration)
+ */

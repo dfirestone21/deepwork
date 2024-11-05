@@ -9,10 +9,15 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class AddTimeBlockUseCase {
 
-    suspend operator fun invoke(session: Session, timeBlock: TimeBlock, position: Int = -1): Result<Session> {
+    companion object {
+        const val POSITION_DEFAULT = -1
+    }
+
+    suspend operator fun invoke(session: Session, timeBlock: TimeBlock, position: Int = POSITION_DEFAULT): Result<Session> {
         return try {
             validate(session, timeBlock, position)
-            val updatedSession = session.copy(timeBlocks = session.timeBlocks + timeBlock)
+            val timeBlocks = addTimeBlock(session, timeBlock, position)
+            val updatedSession = session.copy(timeBlocks = timeBlocks)
             Result.Success(updatedSession)
         } catch (e: Exception) {
             Result.Error(e)
@@ -21,17 +26,26 @@ class AddTimeBlockUseCase {
     }
     
     private fun validate(session: Session, timeBlock: TimeBlock, position: Int) {
+        val invalidPosition = position < POSITION_DEFAULT || position > session.timeBlocks.size - 1
+        if (invalidPosition) {
+            throw SessionException.InvalidTimeBlockPosition()
+        }
         if (session.timeBlocks.size >= MAX_TIME_BLOCKS) {
             throw SessionException.MaxTimeBlocksReached()
         }
-        val previousBlock = previousBlock(session, position)
-        val consecutiveWorkBlocks = timeBlock is TimeBlock.WorkBlock && previousBlock is TimeBlock.WorkBlock
-        if (consecutiveWorkBlocks) {
-            throw SessionException.ConsecutiveWorkBlocks()
-        }
-        val invalidBreakPosition = timeBlock is TimeBlock.BreakBlock && previousBlock !is TimeBlock.WorkBlock
-        if (invalidBreakPosition) {
+        val cantStartWithBreakBlock = timeBlock is TimeBlock.BreakBlock && session.timeBlocks.isEmpty()
+        if (cantStartWithBreakBlock) {
             throw SessionException.InvalidBreakPosition()
+        }
+        val previousBlock = previousBlock(session, position)
+        val nextBlock = nextBlock(session, position)
+        val consecutiveWorkBlocks = timeBlock is TimeBlock.WorkBlock && (previousBlock is TimeBlock.WorkBlock || nextBlock is TimeBlock.WorkBlock)
+        if (consecutiveWorkBlocks) {
+            throw SessionException.ConsecutiveBlockTypes()
+        }
+        val consecutiveBreakBlocks = timeBlock is TimeBlock.BreakBlock && (previousBlock is TimeBlock.BreakBlock || nextBlock is TimeBlock.BreakBlock)
+        if (consecutiveBreakBlocks) {
+            throw SessionException.ConsecutiveBlockTypes()
         }
         val maxSessionDurationReached = session.timeBlocks.sumOf { it.duration.inWholeMilliseconds}.milliseconds + timeBlock.duration > Session.MAX_DURATION
         if (maxSessionDurationReached) {
@@ -40,7 +54,26 @@ class AddTimeBlockUseCase {
     }
 
     private fun previousBlock(session: Session, position: Int): TimeBlock? {
-        return if (position == -1) session.timeBlocks.lastOrNull()
-        else session.timeBlocks.getOrNull(position - 1)
+        return if (position == POSITION_DEFAULT) {
+            session.timeBlocks.lastOrNull()
+        } else {
+            session.timeBlocks.getOrNull(position - 1)
+        }
+    }
+
+    private fun nextBlock(session: Session, position: Int): TimeBlock? {
+        return if (position == POSITION_DEFAULT) {
+            null
+        } else {
+            session.timeBlocks.getOrNull(position + 1)
+        }
+    }
+
+    private fun addTimeBlock(session: Session, timeBlock: TimeBlock, position: Int): List<TimeBlock> {
+        return if (position == POSITION_DEFAULT) {
+            session.timeBlocks + timeBlock
+        } else {
+            session.timeBlocks.toMutableList().apply { set(position, timeBlock) }
+        }
     }
 }

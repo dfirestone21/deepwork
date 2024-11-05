@@ -12,12 +12,11 @@ import kotlin.time.Duration.Companion.minutes
 
 class AddTimeBlockUseCaseTest {
     private lateinit var addTimeBlock: AddTimeBlockUseCase
-    private lateinit var session: Session
+    private var session: Session = createDefaultSession()
 
     @Before
     fun setup() {
         addTimeBlock = AddTimeBlockUseCase()
-        session = createDefaultSession()
     }
 
     @Test
@@ -51,7 +50,7 @@ class AddTimeBlockUseCaseTest {
         // exception should be thrown
     }
 
-    @Test(expected = SessionException.ConsecutiveWorkBlocks::class)
+    @Test(expected = SessionException.ConsecutiveBlockTypes::class)
     fun `when adding a work block directly after another work block, should throw exception`() = runTest {
         // given
         val block1 = TimeBlock.workBlock()
@@ -137,7 +136,7 @@ class AddTimeBlockUseCaseTest {
         // exception should be thrown
     }
 
-    @Test(expected = SessionException.InvalidBreakPosition::class)
+    @Test(expected = SessionException.ConsecutiveBlockTypes::class)
     fun `when adding a break block directly after another break block, should throw exception`() = runTest {
         // given
         val workBlock = TimeBlock.workBlock()
@@ -151,6 +150,88 @@ class AddTimeBlockUseCaseTest {
         // then
         // exception should be thrown
     }
+
+    @Test
+    fun `when position is -1, block should be added at the end`() = runTest {
+        // given
+        val workBlock = TimeBlock.workBlock()
+        val breakBlock = TimeBlock.breakBlock()
+
+        // when
+        session = addTimeBlock(session, workBlock, -1).getOrThrow()
+        session = addTimeBlock(session, breakBlock, -1).getOrThrow()
+
+        // then
+        assertEquals(2, session.timeBlocks.size)
+        assertEquals(workBlock, session.timeBlocks[0])
+        assertEquals(breakBlock, session.timeBlocks[1])
+    }
+
+    @Test
+    fun `when position is set and time block is same type as time block at position, should replace time block at position`() = runTest {
+        // given
+        val workBlock = TimeBlock.workBlock()
+        val breakBlock = TimeBlock.breakBlock()
+        val workBlock2 = TimeBlock.workBlock(
+            duration = 35.minutes
+        )
+        // when
+        session = addTimeBlock(session, workBlock).getOrThrow()
+        session = addTimeBlock(session, breakBlock).getOrThrow()
+        session = addTimeBlock(session, workBlock2, 0).getOrThrow()
+
+        // then
+        assertEquals(2, session.timeBlocks.size)
+        assertEquals(workBlock2, session.timeBlocks[0])
+        assertEquals(breakBlock, session.timeBlocks[1])
+        assert(workBlock !in session.timeBlocks)
+    }
+
+    @Test(expected = SessionException.ConsecutiveBlockTypes::class)
+    fun `when position is set and time block is different type to time block at position, should throw exception`() = runTest {
+        // given
+        val workBlock = TimeBlock.workBlock()
+        val breakBlock = TimeBlock.breakBlock()
+        val workBlock2 = TimeBlock.workBlock()
+        // when
+        session = addTimeBlock(session, workBlock).getOrThrow()
+        session = addTimeBlock(session, breakBlock).getOrThrow()
+        addTimeBlock(session, workBlock2, 1).getOrThrow()
+
+        // then
+        // exception should be thrown
+    }
+
+    @Test(expected = SessionException.InvalidTimeBlockPosition::class)
+    fun `when position is less than -1, should throw exception`() = runTest {
+        // given
+        val workBlock = TimeBlock.workBlock()
+        val breakBlock = TimeBlock.breakBlock()
+        val workBlock2 = TimeBlock.workBlock()
+        // when
+        session = addTimeBlock(session, workBlock).getOrThrow()
+        session = addTimeBlock(session, breakBlock).getOrThrow()
+        addTimeBlock(session, workBlock2, -2).getOrThrow()
+
+        // then
+        // exception should be thrown
+    }
+
+    @Test(expected = SessionException.InvalidTimeBlockPosition::class)
+    fun `when position is greater than the size of the timeBlocks list minus 1, should throw exception`() = runTest {
+        // given
+        val workBlock = TimeBlock.workBlock()
+        val breakBlock = TimeBlock.breakBlock()
+        val workBlock2 = TimeBlock.workBlock()
+        // when
+        session = addTimeBlock(session, workBlock).getOrThrow()
+        session = addTimeBlock(session, breakBlock).getOrThrow()
+        addTimeBlock(session, workBlock2, 2).getOrThrow()
+
+        // then
+        // exception should be thrown
+    }
+
 
     private fun createDefaultSession(): Session {
         return Session(

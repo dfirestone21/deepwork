@@ -1,6 +1,5 @@
 package com.example.deepwork.domain.model
 
-import com.example.deepwork.domain.exception.SessionException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
