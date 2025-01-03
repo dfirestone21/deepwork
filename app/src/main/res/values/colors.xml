@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="timeblock_deepwork">#1E285F</color>
+    <color name="timeblock_shallowwork">#78909C</color>
+<!--    <color name="timeblock_break">#F7FDA7</color>-->
+    <color name="timeblock_break">#7A7A7A</color>-->
+    <color name="timeblock_background">#E9E9E9</color>
 </resources>

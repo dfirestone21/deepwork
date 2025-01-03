@@ -2,9 +2,11 @@ val composeVersion by extra("1.5.4")
 val kotlinVersion by extra("1.9.20")
 val roomVersion by extra("2.6.1")
 val lifecycleVersion by extra("2.7.0")
-val mockkVersion by extra("1.13.2")
+val mockkVersion by extra("1.13.13")
 val coroutinesVersion by extra("1.6.0")
 val hiltVersion by extra("2.51.1")
+val navVersion by extra("2.8.3")
+val hiltNavVersion by extra("1.2.0")
 
 buildscript {
 
@@ -80,8 +82,13 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${coroutinesVersion}")
 
     // hilt
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    kapt("com.google.dagger:hilt-android-compiler:2.51.1")
+    implementation("com.google.dagger:hilt-android:$hiltVersion")
+    kapt("com.google.dagger:hilt-android-compiler:$hiltVersion")
+
+    // navigation
+    implementation("androidx.navigation:navigation-compose:$navVersion")
+    androidTestImplementation("androidx.navigation:navigation-testing:$navVersion")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

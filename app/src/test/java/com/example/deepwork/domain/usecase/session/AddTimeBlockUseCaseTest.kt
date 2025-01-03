@@ -22,7 +22,7 @@ class AddTimeBlockUseCaseTest {
     @Test
     fun `when adding new work block, new session should contain work block`() = runTest {
         // given
-        val block = TimeBlock.workBlock()
+        val block = TimeBlock.deepWorkBlock()
         // when
         val updatedSession = addTimeBlock(session, block).getOrThrow()
         val actualBlock = updatedSession.timeBlocks.first()
@@ -37,27 +37,14 @@ class AddTimeBlockUseCaseTest {
         // given
         var session = createDefaultSession()
         for (i in 1..12) {
-            val block = TimeBlock.workBlock()
+            val block = TimeBlock.deepWorkBlock()
             val breakBlock = TimeBlock.breakBlock()
             session = addTimeBlock(session, block).getOrThrow()
             session = addTimeBlock(session, breakBlock).getOrThrow()
         }
-        val newBlock = TimeBlock.workBlock()
+        val newBlock = TimeBlock.deepWorkBlock()
         // when
         addTimeBlock(session, newBlock).getOrThrow()
-
-        // then
-        // exception should be thrown
-    }
-
-    @Test(expected = SessionException.ConsecutiveBlockTypes::class)
-    fun `when adding a work block directly after another work block, should throw exception`() = runTest {
-        // given
-        val block1 = TimeBlock.workBlock()
-        val block2 = TimeBlock.workBlock()
-        val updatedSession = addTimeBlock(session, block1).getOrThrow()
-        // when
-        addTimeBlock(updatedSession, block2).getOrThrow()
 
         // then
         // exception should be thrown
@@ -66,7 +53,7 @@ class AddTimeBlockUseCaseTest {
     @Test
     fun `when adding a break block, new session should contain new break block`() = runTest {
         // given
-        val workBlock = TimeBlock.workBlock()
+        val workBlock = TimeBlock.deepWorkBlock()
         val breakBlock = TimeBlock.breakBlock()
         // when
         var updatedSession = addTimeBlock(session, workBlock).getOrThrow()
@@ -93,31 +80,31 @@ class AddTimeBlockUseCaseTest {
     @Test(expected = SessionException.MaxSessionDurationReached::class)
     fun `when adding a block exceeds MAX_DURATION, should throw exception`() = runTest {
         // given
-        val block = TimeBlock.workBlock(
+        val block = TimeBlock.deepWorkBlock(
             duration = 2.hours
         )
         val break1 = TimeBlock.breakBlock(
             duration = 30.minutes
         )
-        val block2 = TimeBlock.workBlock(
+        val block2 = TimeBlock.deepWorkBlock(
             duration = 2.hours
         )
         val break2 = TimeBlock.breakBlock(
             duration = 30.minutes
         )
-        val block3 = TimeBlock.workBlock(
+        val block3 = TimeBlock.deepWorkBlock(
             duration = 2.hours
         )
         val break3 = TimeBlock.breakBlock(
             duration = 30.minutes
         )
-        val block4 = TimeBlock.workBlock(
+        val block4 = TimeBlock.deepWorkBlock(
             duration = 2.hours
         )
         val break4 = TimeBlock.breakBlock(
             duration = 35.minutes
         )
-        val block5 = TimeBlock.workBlock(
+        val block5 = TimeBlock.deepWorkBlock(
             duration = 2.hours
         )
 
@@ -139,7 +126,7 @@ class AddTimeBlockUseCaseTest {
     @Test(expected = SessionException.ConsecutiveBlockTypes::class)
     fun `when adding a break block directly after another break block, should throw exception`() = runTest {
         // given
-        val workBlock = TimeBlock.workBlock()
+        val workBlock = TimeBlock.deepWorkBlock()
         val breakBlock1 = TimeBlock.breakBlock()
         val breakBlock2 = TimeBlock.breakBlock()
         // when
@@ -154,7 +141,7 @@ class AddTimeBlockUseCaseTest {
     @Test
     fun `when position is -1, block should be added at the end`() = runTest {
         // given
-        val workBlock = TimeBlock.workBlock()
+        val workBlock = TimeBlock.deepWorkBlock()
         val breakBlock = TimeBlock.breakBlock()
 
         // when
@@ -167,47 +154,84 @@ class AddTimeBlockUseCaseTest {
         assertEquals(breakBlock, session.timeBlocks[1])
     }
 
+//    @Test
+//    fun `when position is set and time block is same type as time block at position, should replace time block at position`() = runTest {
+//        // given
+//        val workBlock = TimeBlock.workBlock()
+//        val breakBlock = TimeBlock.breakBlock()
+//        val workBlock2 = TimeBlock.workBlock(
+//            duration = 35.minutes
+//        )
+//        // when
+//        session = addTimeBlock(session, workBlock).getOrThrow()
+//        session = addTimeBlock(session, breakBlock).getOrThrow()
+//        session = addTimeBlock(session, workBlock2, 0).getOrThrow()
+//
+//        // then
+//        assertEquals(2, session.timeBlocks.size)
+//        assertEquals(workBlock2, session.timeBlocks[0])
+//        assertEquals(breakBlock, session.timeBlocks[1])
+//        assert(workBlock !in session.timeBlocks)
+//    }
+
     @Test
-    fun `when position is set and time block is same type as time block at position, should replace time block at position`() = runTest {
+    fun `when position is set, should shift all time blocks to the right of the new block`() = runTest {
         // given
-        val workBlock = TimeBlock.workBlock()
+        val workBlock = TimeBlock.deepWorkBlock()
         val breakBlock = TimeBlock.breakBlock()
-        val workBlock2 = TimeBlock.workBlock(
-            duration = 35.minutes
-        )
+        val workBlock2 = TimeBlock.deepWorkBlock()
+
         // when
         session = addTimeBlock(session, workBlock).getOrThrow()
         session = addTimeBlock(session, breakBlock).getOrThrow()
         session = addTimeBlock(session, workBlock2, 0).getOrThrow()
 
         // then
-        assertEquals(2, session.timeBlocks.size)
+        assertEquals(3, session.timeBlocks.size)
         assertEquals(workBlock2, session.timeBlocks[0])
-        assertEquals(breakBlock, session.timeBlocks[1])
-        assert(workBlock !in session.timeBlocks)
+        assertEquals(workBlock, session.timeBlocks[1])
+        assertEquals(breakBlock, session.timeBlocks[2])
     }
 
-    @Test(expected = SessionException.ConsecutiveBlockTypes::class)
-    fun `when position is set and time block is different type to time block at position, should throw exception`() = runTest {
+    @Test(expected = SessionException.MaxConsecutiveDeepWorkDurationReached::class)
+    fun `when consecutive work blocks exceed MAX_CONSECUTIVE_WORK_DURATION, should throw exception`() = runTest {
         // given
-        val workBlock = TimeBlock.workBlock()
-        val breakBlock = TimeBlock.breakBlock()
-        val workBlock2 = TimeBlock.workBlock()
+        val workBlock = TimeBlock.deepWorkBlock(
+            duration = 2.hours
+        )
+        val workBlock2 = TimeBlock.deepWorkBlock(
+            duration = 2.hours
+        )
+
         // when
-        session = addTimeBlock(session, workBlock).getOrThrow()
-        session = addTimeBlock(session, breakBlock).getOrThrow()
-        addTimeBlock(session, workBlock2, 1).getOrThrow()
+        var updatedSession = addTimeBlock(session, workBlock).getOrThrow()
+        addTimeBlock(updatedSession, workBlock2).getOrThrow()
 
         // then
         // exception should be thrown
     }
 
+//    @Test(expected = SessionException.ConsecutiveBlockTypes::class)
+//    fun `when position is set and time block is different type to time block at position, should throw exception`() = runTest {
+//        // given
+//        val workBlock = TimeBlock.workBlock()
+//        val breakBlock = TimeBlock.breakBlock()
+//        val workBlock2 = TimeBlock.workBlock()
+//        // when
+//        session = addTimeBlock(session, workBlock).getOrThrow()
+//        session = addTimeBlock(session, breakBlock).getOrThrow()
+//        addTimeBlock(session, workBlock2, 1).getOrThrow()
+//
+//        // then
+//        // exception should be thrown
+//    }
+
     @Test(expected = SessionException.InvalidTimeBlockPosition::class)
     fun `when position is less than -1, should throw exception`() = runTest {
         // given
-        val workBlock = TimeBlock.workBlock()
+        val workBlock = TimeBlock.deepWorkBlock()
         val breakBlock = TimeBlock.breakBlock()
-        val workBlock2 = TimeBlock.workBlock()
+        val workBlock2 = TimeBlock.deepWorkBlock()
         // when
         session = addTimeBlock(session, workBlock).getOrThrow()
         session = addTimeBlock(session, breakBlock).getOrThrow()
@@ -220,9 +244,9 @@ class AddTimeBlockUseCaseTest {
     @Test(expected = SessionException.InvalidTimeBlockPosition::class)
     fun `when position is greater than the size of the timeBlocks list minus 1, should throw exception`() = runTest {
         // given
-        val workBlock = TimeBlock.workBlock()
+        val workBlock = TimeBlock.deepWorkBlock()
         val breakBlock = TimeBlock.breakBlock()
-        val workBlock2 = TimeBlock.workBlock()
+        val workBlock2 = TimeBlock.deepWorkBlock()
         // when
         session = addTimeBlock(session, workBlock).getOrThrow()
         session = addTimeBlock(session, breakBlock).getOrThrow()

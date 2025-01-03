@@ -19,7 +19,7 @@ class CreateWorkBlockUseCaseTest {
     @Test
     fun `when creating work block, should generate id`() = runTest {
         // given
-        val block = TimeBlock.workBlock(25.minutes)
+        val block = TimeBlock.deepWorkBlock(25.minutes)
         // when
         val createdBlock = createWorkBlock(block).getOrThrow()
         // then
@@ -29,8 +29,8 @@ class CreateWorkBlockUseCaseTest {
     @Test(expected = TimeBlockException.InvalidDurationTooShort::class)
     fun `when duration is less than DURATION_MIN, should throw exception`() = runTest {
         // given
-        val duration = TimeBlock.WorkBlock.DURATION_MIN - 5.minutes
-        val block = TimeBlock.workBlock(duration)
+        val duration = TimeBlock.WorkBlock.DeepWorkBlock.DURATION_MIN - 5.minutes
+        val block = TimeBlock.deepWorkBlock(duration)
         // when
         createWorkBlock(block).getOrThrow()
     }
@@ -38,8 +38,8 @@ class CreateWorkBlockUseCaseTest {
     @Test(expected = TimeBlockException.InvalidDurationTooLong::class)
     fun `when duration is greater than DURATION_MAX, should throw exception`() = runTest {
         // given
-        val duration = TimeBlock.WorkBlock.DURATION_MAX + 5.minutes
-        val block = TimeBlock.workBlock(duration)
+        val duration = TimeBlock.WorkBlock.DeepWorkBlock.DURATION_MAX + 5.minutes
+        val block = TimeBlock.deepWorkBlock(duration)
         // when
         createWorkBlock(block).getOrThrow()
     }
@@ -47,7 +47,7 @@ class CreateWorkBlockUseCaseTest {
     @Test(expected = TimeBlockException.InvalidCategoriesCount::class)
     fun `when there are no categories, should throw exception`() = runTest {
         // given
-        val block = TimeBlock.workBlock(25.minutes, categories = emptyList())
+        val block = TimeBlock.deepWorkBlock(25.minutes, categories = emptyList())
         // when
         createWorkBlock(block).getOrThrow()
     }
@@ -56,7 +56,7 @@ class CreateWorkBlockUseCaseTest {
     fun `when there are more categories than CATEGORIES_MAX, should throw exception`() = runTest {
         // given
         val categories = List(TimeBlock.WorkBlock.CATEGORIES_MAX + 1) { Category.DEFAULT }
-        val block = TimeBlock.workBlock(25.minutes, categories)
+        val block = TimeBlock.deepWorkBlock(25.minutes, categories)
         // when
         createWorkBlock(block).getOrThrow()
     }
@@ -65,7 +65,7 @@ class CreateWorkBlockUseCaseTest {
     fun `when there are duplicate categories, should throw exception`() = runTest {
         // given
         val category = Category("id", "name")
-        val block = TimeBlock.workBlock(25.minutes, categories = listOf(category, category))
+        val block = TimeBlock.deepWorkBlock(25.minutes, categories = listOf(category, category))
         // when
         createWorkBlock(block).getOrThrow()
     }
