@@ -12,4 +12,5 @@
 <!--    <color name="timeblock_break">#F7FDA7</color>-->
     <color name="timeblock_break">#7A7A7A</color>-->
     <color name="timeblock_background">#E9E9E9</color>
+    <color name="category_default">#4CAF50</color>
 </resources>

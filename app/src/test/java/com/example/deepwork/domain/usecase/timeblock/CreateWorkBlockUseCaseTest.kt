@@ -1,8 +1,13 @@
 package com.example.deepwork.domain.usecase.timeblock
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.example.deepwork.domain.business.TimeBlockValidator
 import com.example.deepwork.domain.exception.TimeBlockException
 import com.example.deepwork.domain.model.Category
 import com.example.deepwork.domain.model.TimeBlock
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -10,10 +15,14 @@ import kotlin.time.Duration.Companion.minutes
 
 class CreateWorkBlockUseCaseTest {
     private lateinit var createWorkBlock: CreateWorkBlockUseCase
+    private lateinit var timeBlockValidator: TimeBlockValidator
 
     @Before
     fun setup() {
-        createWorkBlock = CreateWorkBlockUseCase()
+        timeBlockValidator = mockk() {
+            every { validate(any()) } returns Unit
+        }
+        createWorkBlock = CreateWorkBlockUseCase(timeBlockValidator)
     }
 
     @Test
@@ -26,47 +35,16 @@ class CreateWorkBlockUseCaseTest {
         assert(createdBlock.id.isNotBlank())
     }
 
-    @Test(expected = TimeBlockException.InvalidDurationTooShort::class)
-    fun `when duration is less than DURATION_MIN, should throw exception`() = runTest {
+    @Test
+    fun `when time block is invalid, should return error result`() = runTest {
         // given
-        val duration = TimeBlock.WorkBlock.DeepWorkBlock.DURATION_MIN - 5.minutes
-        val block = TimeBlock.deepWorkBlock(duration)
-        // when
-        createWorkBlock(block).getOrThrow()
-    }
+        val block = TimeBlock.deepWorkBlock(0.minutes, categories = emptyList())
+        every { timeBlockValidator.validate(any()) } throws TimeBlockException.InvalidDurationTooShort("20 minutes")
 
-    @Test(expected = TimeBlockException.InvalidDurationTooLong::class)
-    fun `when duration is greater than DURATION_MAX, should throw exception`() = runTest {
-        // given
-        val duration = TimeBlock.WorkBlock.DeepWorkBlock.DURATION_MAX + 5.minutes
-        val block = TimeBlock.deepWorkBlock(duration)
         // when
-        createWorkBlock(block).getOrThrow()
-    }
+        val result = createWorkBlock(block)
 
-    @Test(expected = TimeBlockException.InvalidCategoriesCount::class)
-    fun `when there are no categories, should throw exception`() = runTest {
-        // given
-        val block = TimeBlock.deepWorkBlock(25.minutes, categories = emptyList())
-        // when
-        createWorkBlock(block).getOrThrow()
-    }
-
-    @Test(expected = TimeBlockException.InvalidCategoriesCount::class)
-    fun `when there are more categories than CATEGORIES_MAX, should throw exception`() = runTest {
-        // given
-        val categories = List(TimeBlock.WorkBlock.CATEGORIES_MAX + 1) { Category.DEFAULT }
-        val block = TimeBlock.deepWorkBlock(25.minutes, categories)
-        // when
-        createWorkBlock(block).getOrThrow()
-    }
-
-    @Test(expected = TimeBlockException.DuplicateCategories::class)
-    fun `when there are duplicate categories, should throw exception`() = runTest {
-        // given
-        val category = Category("id", "name")
-        val block = TimeBlock.deepWorkBlock(25.minutes, categories = listOf(category, category))
-        // when
-        createWorkBlock(block).getOrThrow()
+        // then
+        assert(result.isError)
     }
 }

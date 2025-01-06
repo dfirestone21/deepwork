@@ -9,6 +9,7 @@ sealed class TimeBlock(
 ) {
     abstract val minDuration: Duration
     abstract val maxDuration: Duration
+    abstract val blockType: BlockType
 
     enum class BlockType {
         DEEP,
@@ -46,6 +47,22 @@ sealed class TimeBlock(
                 duration = duration
             )
         }
+
+        fun minDuration(blockType: BlockType): Duration {
+            return when (blockType) {
+                BlockType.DEEP -> WorkBlock.DeepWorkBlock.DURATION_MIN
+                BlockType.SHALLOW -> WorkBlock.ShallowWorkBlock.DURATION_MIN
+                BlockType.BREAK -> BreakBlock.DURATION_MIN
+            }
+        }
+
+        fun maxDuration(blockType: BlockType): Duration {
+            return when (blockType) {
+                BlockType.DEEP -> WorkBlock.DeepWorkBlock.DURATION_MAX
+                BlockType.SHALLOW -> WorkBlock.ShallowWorkBlock.DURATION_MAX
+                BlockType.BREAK -> BreakBlock.DURATION_MAX
+            }
+        }
     }
 
     abstract fun copyValues(
@@ -77,6 +94,7 @@ sealed class TimeBlock(
 
             override val minDuration: Duration = DURATION_MIN
             override val maxDuration: Duration = DURATION_MAX
+            override val blockType: BlockType = BlockType.DEEP
 
             companion object {
                 val DURATION_MIN: Duration = 25.minutes
@@ -100,6 +118,7 @@ sealed class TimeBlock(
 
             override val minDuration: Duration = DURATION_MIN
             override val maxDuration: Duration = DURATION_MAX
+            override val blockType: BlockType = BlockType.SHALLOW
 
             companion object {
                 val DURATION_MIN: Duration = 10.minutes
@@ -123,6 +142,7 @@ sealed class TimeBlock(
 
         override val minDuration: Duration = DURATION_MIN
         override val maxDuration: Duration = DURATION_MAX
+        override val blockType: BlockType = BlockType.BREAK
 
         companion object {
             val DURATION_MIN: Duration = 5.minutes

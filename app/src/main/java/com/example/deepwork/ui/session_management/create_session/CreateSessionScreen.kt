@@ -85,7 +85,7 @@ fun CreateSessionContentPreview() {
     ).map { TimeBlockUi.fromDomain(it) }
 
     val uiState = CreateSessionUiState(
-        name = InputField("Session name"),
+        name = InputField(),
         timeBlocks = timeBlocks
     )
     DeepWorkTheme {
@@ -125,7 +125,7 @@ fun CreateSessionContent(
             TextField(
                 value = uiState.name.value,
                 onValueChange = { onEvent(CreateSessionEvent.UpdateName(it)) },
-                placeholder = "Session name",
+                placeholder = "Morning Writing Session",
                 isError = uiState.name.message != null,
             )
             TimeBlocks(

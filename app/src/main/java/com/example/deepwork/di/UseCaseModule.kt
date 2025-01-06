@@ -1,5 +1,7 @@
 package com.example.deepwork.di
 
+import com.example.deepwork.domain.business.TimeBlockValidator
+import com.example.deepwork.domain.business.TimeBlockValidatorImpl
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
 import dagger.Binds
 import dagger.Module
@@ -10,4 +12,6 @@ import dagger.hilt.android.components.ActivityRetainedComponent
 @InstallIn(ActivityRetainedComponent::class)
 interface UseCaseModule {
 
+    @Binds
+    fun bindTimeBlockValidator(validator: TimeBlockValidatorImpl): TimeBlockValidator
 }
