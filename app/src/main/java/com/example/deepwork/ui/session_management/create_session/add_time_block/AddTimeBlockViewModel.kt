@@ -13,7 +13,6 @@ import com.example.deepwork.ui.util.UiEvent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 class AddTimeBlockViewModel @Inject constructor(
@@ -54,17 +53,43 @@ class AddTimeBlockViewModel @Inject constructor(
         )
     }
 
-    private fun onDurationChanged(duration: String) {
+    private fun onDurationChanged(durationString: String) {
+        val duration = try {
+            durationString.toInt().minutes
+        } catch (e: NumberFormatException) {
+            val errorMessage = "Duration must be a number"
+            updateDurationError(errorMessage)
+            return
+        }
+
+        val durationError = try {
+            timeBlockValidator.validateDuration(state.selectedBlockType, duration)
+            null
+        } catch (e: Exception) {
+            e.message ?: "Invalid duration"
+        }
+
         state = state.copy(
             duration = state.duration.copy(
-                value = duration
+                value = durationString,
+                message = durationError,
+                isError = durationError != null
+            )
+        )
+    }
+
+    private fun updateDurationError(errorMessage: String) {
+        state = state.copy(
+            duration = state.duration.copy(
+                message = errorMessage,
+                isError = true
             )
         )
     }
 
     private fun placeHolderFromBlockType(blockType: TimeBlock.BlockType): String {
         val min = TimeBlock.minDuration(blockType).inWholeMinutes
-        val max = TimeBlock.minDuration(blockType).inWholeMinutes
+        val max = TimeBlock.maxDuration(blockType).inWholeMinutes
         return "$min to $max minutes"
     }
 
