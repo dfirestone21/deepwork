@@ -9,7 +9,8 @@ data class AddTimeBlockState(
     val duration: InputField = InputField(),
     val categories: List<SelectableCategory> = emptyList(),
     val maxSelectableCategories: Int = 3,
-    val isValid: Boolean = false
+    val isValid: Boolean = false,
+    val showConfirmCancelDialog: Boolean = false
 ) {
     val selectedCategoriesCount: Int
         get() = categories.count { it.isSelected }

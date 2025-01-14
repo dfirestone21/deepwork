@@ -9,6 +9,8 @@ sealed interface AddTimeBlockEvent {
     data class DurationChanged(val duration: String) : AddTimeBlockEvent
     data object SaveClicked : AddTimeBlockEvent
     data object CancelClicked : AddTimeBlockEvent
+    data object ConfirmCancelClicked: AddTimeBlockEvent
+    data object DismissCancelClicked: AddTimeBlockEvent
     data object NavigateUp : AddTimeBlockEvent
     data class CategorySelected(val category: Category) : AddTimeBlockEvent
     data class CategoryUnselected(val category: Category) : AddTimeBlockEvent

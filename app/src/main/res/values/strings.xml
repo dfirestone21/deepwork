@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Deep Work</string>
+    <string name="cancel_create_block_dialog_title">Cancel creating Block?</string>
+    <string name="cancel_create_block_dialog_message">Are you sure you wish to cancel?</string>
 </resources>

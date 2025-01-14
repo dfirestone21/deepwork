@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -29,6 +31,7 @@ import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,9 +41,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.compose.DeepWorkTheme
 import com.example.deepwork.R
@@ -116,6 +121,12 @@ fun AddTimeBlockContent(
                 CategoriesComponent(
                     state = state,
                     onEvent = onEvent,
+                )
+            }
+            if (state.showConfirmCancelDialog) {
+                ConfirmCancelDialog(
+                    onConfirm = { onEvent(AddTimeBlockEvent.ConfirmCancelClicked) },
+                    onDismiss = { onEvent(AddTimeBlockEvent.DismissCancelClicked)}
                 )
             }
         }
@@ -433,13 +444,47 @@ fun AddTimeBlockContentPreview() {
                     placeHolder = "25 to 120 minutes"
                 ),
                 categories = testCategories(),
-                isValid = true
+                isValid = true,
+                showConfirmCancelDialog = true
             ),
             onNavigate = {},
             onNavigateUp = {},
             onEvent = {}
         )
     }
+}
+
+@Composable
+fun ConfirmCancelDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AlertDialog(
+        title = {
+            Text(text = stringResource(R.string.cancel_create_block_dialog_title))
+        },
+        text = {
+            Text(text = stringResource(R.string.cancel_create_block_dialog_message))
+        },
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm() }
+            ) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { onDismiss() }
+            ) {
+                Text("Dismiss")
+            }
+        },
+        modifier = modifier
+    )
+
 }
 
 private fun testCategories(): List<SelectableCategory> {

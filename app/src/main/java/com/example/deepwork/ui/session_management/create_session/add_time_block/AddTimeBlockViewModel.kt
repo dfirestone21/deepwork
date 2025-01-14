@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.deepwork.domain.business.TimeBlockValidator
 import com.example.deepwork.domain.model.TimeBlock
 import com.example.deepwork.domain.usecase.timeblock.CreateBreakBlockUseCase
@@ -12,6 +13,7 @@ import com.example.deepwork.ui.model.InputField
 import com.example.deepwork.ui.util.UiEvent
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 
@@ -35,8 +37,10 @@ class AddTimeBlockViewModel @Inject constructor(
         when (event) {
             is AddTimeBlockEvent.BlockTypeSelected -> onBlockTypeSelected(event.blockType)
             is AddTimeBlockEvent.DurationChanged -> onDurationChanged(event.duration)
-            is AddTimeBlockEvent.CancelClicked -> TODO()
-            is AddTimeBlockEvent.NavigateUp -> TODO()
+            is AddTimeBlockEvent.CancelClicked -> state = state.copy(showConfirmCancelDialog = true)
+            is AddTimeBlockEvent.ConfirmCancelClicked -> onConfirmCancelClicked()
+            is AddTimeBlockEvent.DismissCancelClicked -> state = state.copy(showConfirmCancelDialog = false)
+            is AddTimeBlockEvent.NavigateUp -> sendNavigateUpEvent()
             is AddTimeBlockEvent.SaveClicked -> TODO()
             is AddTimeBlockEvent.CategorySelected -> TODO()
             is AddTimeBlockEvent.CategoryUnselected -> TODO()
@@ -85,6 +89,17 @@ class AddTimeBlockViewModel @Inject constructor(
                 isError = true
             )
         )
+    }
+
+    private fun onConfirmCancelClicked() {
+        sendNavigateUpEvent()
+        state = state.copy(showConfirmCancelDialog = false)
+    }
+
+    private fun sendNavigateUpEvent() {
+        viewModelScope.launch {
+            _uiEvent.send(UiEvent.NavigateUp)
+        }
     }
 
     private fun placeHolderFromBlockType(blockType: TimeBlock.BlockType): String {

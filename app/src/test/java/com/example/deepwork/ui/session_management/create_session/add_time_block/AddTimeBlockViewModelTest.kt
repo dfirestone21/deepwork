@@ -5,11 +5,14 @@ import com.example.deepwork.domain.exception.TimeBlockException
 import com.example.deepwork.domain.model.TimeBlock
 import com.example.deepwork.domain.usecase.timeblock.CreateBreakBlockUseCase
 import com.example.deepwork.domain.usecase.timeblock.CreateWorkBlockUseCase
+import com.example.deepwork.ui.util.UiEvent
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -233,6 +236,88 @@ AddTimeBlockViewModelTest {
         // then
         assert(initialDuration != actualDuration)
         assertEquals(expectedDuration, actualDuration)
+    }
+
+    @Test
+    fun `onEvent CancelClicked should set showConfirmCancelDialog to true`() {
+        // given
+        val expectedShowConfirmCancelDialog = true
+
+        // when
+        val event = AddTimeBlockEvent.CancelClicked
+        viewModel.onEvent(event)
+        val state = viewModel.state
+
+        // then
+        assert(state.showConfirmCancelDialog == expectedShowConfirmCancelDialog)
+    }
+
+    @Test
+    fun `onEvent ConfirmCancelClicked should send UiEvent NavigateUp`() = runTest {
+        // given
+        val expectedUiEvent = UiEvent.NavigateUp
+
+        // when
+        val actualEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(actualEvents) }
+        val event = AddTimeBlockEvent.ConfirmCancelClicked
+        viewModel.onEvent(event)
+        advanceUntilIdle()
+        val actualEvent = actualEvents.first()
+
+        // then
+        assertEquals(expectedUiEvent, actualEvent)
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent ConfirmCancelClicked should set showConfirmCancelDialog to false`() {
+        // given
+        val expectedShowConfirmCancelDialog = false
+
+        // when
+        val firstEvent = AddTimeBlockEvent.CancelClicked
+        viewModel.onEvent(firstEvent)
+        val event = AddTimeBlockEvent.ConfirmCancelClicked
+        viewModel.onEvent(event)
+        val state = viewModel.state
+
+        // then
+        assert(state.showConfirmCancelDialog == expectedShowConfirmCancelDialog)
+    }
+
+    @Test
+    fun `onEvent DismissCancelClicked should set showConfirmCancelDialog to false`() {
+        // given
+        val expectedShowConfirmCancelDialog = false
+
+        // when
+        val firstEvent = AddTimeBlockEvent.CancelClicked
+        viewModel.onEvent(firstEvent)
+        val event = AddTimeBlockEvent.DismissCancelClicked
+        viewModel.onEvent(event)
+        val state = viewModel.state
+
+        // then
+        assert(state.showConfirmCancelDialog == expectedShowConfirmCancelDialog)
+    }
+
+    @Test
+    fun `onEvent NavigateUp should send UiEvent NavigateUp`() = runTest {
+        // given
+        val expectedUiEvent = UiEvent.NavigateUp
+
+        // when
+        val actualEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(actualEvents) }
+        val event = AddTimeBlockEvent.NavigateUp
+        viewModel.onEvent(event)
+        advanceUntilIdle()
+        val actualEvent = actualEvents.first()
+
+        // then
+        assertEquals(expectedUiEvent, actualEvent)
+        job.cancel()
     }
 
 }
