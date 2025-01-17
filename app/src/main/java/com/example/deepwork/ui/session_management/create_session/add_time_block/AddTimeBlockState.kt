@@ -8,7 +8,6 @@ data class AddTimeBlockState(
     val selectedBlockType: TimeBlock.BlockType = TimeBlock.BlockType.DEEP,
     val duration: InputField = InputField(),
     val categories: List<SelectableCategory> = emptyList(),
-    val maxSelectableCategories: Int = 3,
     val isValid: Boolean = false,
     val showConfirmCancelDialog: Boolean = false
 ) {
@@ -18,5 +17,5 @@ data class AddTimeBlockState(
 
 data class SelectableCategory(
     val category: Category,
-    val isSelected: Boolean
+    val isSelected: Boolean = false
 )

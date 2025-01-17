@@ -420,7 +420,7 @@ fun CategoriesComponent(
         Spacer(modifier = Modifier.height(4.dp))
         Text("Add Categories",
             style = MaterialTheme.typography.titleMedium,)
-        Text("Selected (${state.selectedCategoriesCount}/${state.maxSelectableCategories})")
+        Text("Selected (${state.selectedCategoriesCount}/${TimeBlock.WorkBlock.CATEGORIES_MAX})")
         SelectedCategories(
             categories = state.categories.filter { it.isSelected }.map { it.category },
             onUnselected = { onEvent(AddTimeBlockEvent.CategoryUnselected(it)) }
@@ -450,7 +450,7 @@ fun AddTimeBlockContentPreview() {
                 ),
                 categories = testCategories(),
                 isValid = true,
-                showConfirmCancelDialog = true
+                showConfirmCancelDialog = false
             ),
             onNavigate = {},
             onNavigateUp = {},
@@ -489,7 +489,6 @@ fun ConfirmCancelDialog(
         },
         modifier = modifier
     )
-
 }
 
 private fun testCategories(): List<SelectableCategory> {
