@@ -4,7 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -23,19 +30,27 @@ class MainActivity : ComponentActivity() {
         setContent {
             DeepWorkTheme {
                 val navController = rememberNavController()
-                NavHost(
-                    navController = navController,
-                    startDestination = Routes.CREATE_SESSION
-                ) {
-                    composable(Routes.CREATE_SESSION) { backStackEntry ->
-                        val viewModel = hiltViewModel<CreateSessionViewModel>(
-                            viewModelStoreOwner = backStackEntry
-                        )
-                        CreateSessionScreen(
-                            viewModel = viewModel,
-                            onNavigate = navController::navigate,
-                            onNavigateUp = { navController.popBackStack() }
-                        )
+                val snackbarHostState = remember { SnackbarHostState() }
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+                ) { padding ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = Routes.CREATE_SESSION,
+                        modifier = Modifier.padding(padding)
+                    ) {
+                        composable(Routes.CREATE_SESSION) { backStackEntry ->
+                            val viewModel = hiltViewModel<CreateSessionViewModel>(
+                                viewModelStoreOwner = backStackEntry
+                            )
+                            CreateSessionScreen(
+                                viewModel = viewModel,
+                                snackbarHostState = snackbarHostState,
+                                onNavigate = navController::navigate,
+                                onNavigateUp = { navController.popBackStack() }
+                            )
+                        }
                     }
                 }
             }

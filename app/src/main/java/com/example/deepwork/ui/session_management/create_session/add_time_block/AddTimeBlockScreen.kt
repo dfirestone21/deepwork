@@ -30,11 +30,15 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -60,6 +64,7 @@ import com.example.deepwork.ui.util.UiEvent
 @Composable
 fun AddTimeBlockScreen(
     viewModel: AddTimeBlockViewModel = hiltViewModel(),
+    snackbarHostState: SnackbarHostState,
     onNavigate: (UiEvent.Navigate) -> Unit,
     onNavigateUp: () -> Unit
 ) {
@@ -68,7 +73,7 @@ fun AddTimeBlockScreen(
             when (it) {
                 is UiEvent.Navigate -> onNavigate(it)
                 is UiEvent.NavigateUp -> onNavigateUp()
-                is UiEvent.ShowSnackbar -> TODO()
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(it.message)
             }
         }
     }

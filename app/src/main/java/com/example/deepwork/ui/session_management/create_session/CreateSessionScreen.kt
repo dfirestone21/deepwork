@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -53,6 +54,7 @@ import kotlin.time.toDuration
 @Composable
 fun CreateSessionScreen(
     viewModel: CreateSessionViewModel = hiltViewModel(),
+    snackbarHostState: SnackbarHostState,
     onNavigate: (UiEvent.Navigate) -> Unit,
     onNavigateUp: () -> Unit
 ) {
@@ -63,7 +65,7 @@ fun CreateSessionScreen(
             when (event) {
                 is UiEvent.Navigate -> onNavigate(event)
                 is UiEvent.NavigateUp -> onNavigateUp()
-                is UiEvent.ShowSnackbar -> TODO()
+                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
             }
         }
     }
