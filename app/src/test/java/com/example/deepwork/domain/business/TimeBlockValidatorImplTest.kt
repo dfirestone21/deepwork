@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 class TimeBlockValidatorImplTest {
     private lateinit var timeBlockValidator: TimeBlockValidatorImpl
@@ -56,7 +57,7 @@ class TimeBlockValidatorImplTest {
     fun `when type is work block and there are duplicate categories, should throw exception`() = runTest {
         // given
         val red = 0xFF0000FF.toInt()
-        val category = Category("id", "name", red)
+        val category = Category.create("name", red)
         val block = TimeBlock.deepWorkBlock(25.minutes, categories = listOf(category, category))
         // when
         timeBlockValidator.validate(block)

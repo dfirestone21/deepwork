@@ -14,12 +14,14 @@ import com.example.deepwork.domain.usecase.timeblock.CreateWorkBlockUseCase
 import com.example.deepwork.domain.usecase.timeblock.category.GetCategoriesUseCase
 import com.example.deepwork.ui.model.InputField
 import com.example.deepwork.ui.util.UiEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 
+@HiltViewModel
 class AddTimeBlockViewModel @Inject constructor(
     private val createWorkBlock: CreateWorkBlockUseCase,
     private val createBreakBlock: CreateBreakBlockUseCase,
@@ -68,6 +70,7 @@ class AddTimeBlockViewModel @Inject constructor(
             is AddTimeBlockEvent.SaveClicked -> TODO()
             is AddTimeBlockEvent.CategorySelected -> onCategorySelected(event.category)
             is AddTimeBlockEvent.CategoryUnselected -> TODO()
+            is AddTimeBlockEvent.CreateCategoryClicked -> TODO() // show bottom sheet for creating category
         }
     }
 

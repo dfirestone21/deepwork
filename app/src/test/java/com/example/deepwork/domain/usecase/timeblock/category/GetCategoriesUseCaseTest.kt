@@ -58,11 +58,11 @@ class GetCategoriesUseCaseTest {
 
     private fun testCategories(): List<Category> {
         return listOf(
-            Category("1", "Coding", Color.Blue.toArgb()),
-            Category("2", "Design", Color.Red.toArgb()),
-            Category("3", "Writing", Color.Green.toArgb()),
-            Category("4", "Research", Color.Yellow.toArgb()),
-            Category("5", "Learning", Color.Magenta.toArgb()),
+            Category.create("Coding", Color.Blue.toArgb()),
+            Category.create( "Design", Color.Red.toArgb()),
+            Category.create( "Writing", Color.Green.toArgb()),
+            Category.create( "Research", Color.Yellow.toArgb()),
+            Category.create( "Learning", Color.Magenta.toArgb()),
         )
     }
 }

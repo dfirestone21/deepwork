@@ -1,5 +1,5 @@
 val composeVersion by extra("1.5.4")
-val kotlinVersion by extra("1.9.20")
+val kotlinVersion by extra("2.1.0")
 val roomVersion by extra("2.6.1")
 val lifecycleVersion by extra("2.7.0")
 val mockkVersion by extra("1.13.13")
@@ -18,6 +18,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -49,6 +51,9 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+        freeCompilerArgs += listOf(
+            "-opt-in=kotlin.uuid.ExperimentalUuidApi"
+        )
     }
     buildFeatures {
         compose = true
@@ -89,6 +94,14 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:$navVersion")
     androidTestImplementation("androidx.navigation:navigation-testing:$navVersion")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+
+    // room
+    implementation("androidx.room:room-runtime:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

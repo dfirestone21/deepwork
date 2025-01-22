@@ -16,10 +16,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -30,15 +30,12 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,7 +46,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.compose.DeepWorkTheme
 import com.example.deepwork.R
@@ -128,6 +124,11 @@ fun AddTimeBlockContent(
                     onEvent = onEvent,
                 )
             }
+            Spacer(modifier = Modifier.weight(1f))
+            AddTimeBlockButtons(
+                state = state,
+                onEvent = onEvent,
+            )
             if (state.showConfirmCancelDialog) {
                 ConfirmCancelDialog(
                     onConfirm = { onEvent(AddTimeBlockEvent.ConfirmCancelClicked) },
@@ -283,6 +284,38 @@ fun SelectableCategory(
 }
 
 @Composable
+fun AddCategoryChipButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    InputChip(
+        label = { Text(
+            text = "Add New",
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        ) },
+        selected = false,
+        onClick = onClick,
+        colors = InputChipDefaults.inputChipColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        border = InputChipDefaults.inputChipBorder(
+            enabled = true,
+            selected = false,
+            borderColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier,
+        leadingIcon = {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = "Add icon",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    )
+}
+
+@Composable
 fun SelectedCategory(
     category: Category,
     onUnselected: (Category) -> Unit,
@@ -377,12 +410,16 @@ fun CategoryCircleIcon(
 @Composable
 fun SelectableCategories(
     categories: List<SelectableCategory>,
-    onSelected: (Category) -> Unit
+    onSelected: (Category) -> Unit,
+    onAddNewClicked: () -> Unit
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
+        AddCategoryChipButton(
+            onClick = { },
+        )
         categories.forEach { category ->
             SelectableCategory(
                 category = category.category,
@@ -390,16 +427,6 @@ fun SelectableCategories(
                 onSelected = onSelected
             )
         }
-    }
-}
-
-@Composable
-fun SelectableCategoriesPreview() {
-    DeepWorkTheme {
-        SelectableCategories(
-            categories = testCategories(),
-            onSelected = { }
-        )
     }
 }
 
@@ -412,7 +439,7 @@ fun CategoriesComponent(
     // Note that this Column's properties are the same as those in AddTimeBlockContent
     // If anything changes there it should be reflected here
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.Start
     ) {
@@ -428,12 +455,8 @@ fun CategoriesComponent(
         Text("Available Categories")
         SelectableCategories(
             categories = state.categories,
-            onSelected = { onEvent(AddTimeBlockEvent.CategorySelected(it)) })
-        Spacer(modifier = Modifier.weight(1f))
-        AddTimeBlockButtons(
-            state = state,
-            onEvent = onEvent,
-        )
+            onSelected = { onEvent(AddTimeBlockEvent.CategorySelected(it)) },
+            onAddNewClicked = { onEvent(AddTimeBlockEvent.CreateCategoryClicked) })
     }
 }
 
@@ -499,7 +522,7 @@ private fun testCategories(): List<SelectableCategory> {
         Category("4", "Research", Color.Yellow.toArgb()),
         Category("5", "Learning", Color.Magenta.toArgb()),
     ).map { category ->
-        val isSelected = category.id == "1" || category.id == "5"
+        val isSelected = category.uuid == "1" || category.uuid == "5"
         SelectableCategory(category, isSelected)
     }
 }

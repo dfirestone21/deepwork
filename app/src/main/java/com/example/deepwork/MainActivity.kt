@@ -22,7 +22,11 @@ import com.example.deepwork.ui.navigation.Routes
 import com.example.deepwork.ui.navigation.navigate
 import com.example.deepwork.ui.session_management.create_session.CreateSessionScreen
 import com.example.deepwork.ui.session_management.create_session.CreateSessionViewModel
+import com.example.deepwork.ui.session_management.create_session.add_time_block.AddTimeBlockScreen
+import com.example.deepwork.ui.session_management.create_session.add_time_block.AddTimeBlockViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,10 +39,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
                 ) { padding ->
+                    padding.calculateTopPadding()
                     NavHost(
                         navController = navController,
                         startDestination = Routes.CREATE_SESSION,
-                        modifier = Modifier.padding(padding)
                     ) {
                         composable(Routes.CREATE_SESSION) { backStackEntry ->
                             val viewModel = hiltViewModel<CreateSessionViewModel>(
@@ -47,8 +51,19 @@ class MainActivity : ComponentActivity() {
                             CreateSessionScreen(
                                 viewModel = viewModel,
                                 snackbarHostState = snackbarHostState,
-                                onNavigate = navController::navigate,
+                                onNavigate = { navigateEvent -> navController.navigate(navigateEvent.route) },
                                 onNavigateUp = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.CREATE_TIMEBLOCK) { navBackStackEntry ->
+                            val viewModel = hiltViewModel<AddTimeBlockViewModel>(
+                                viewModelStoreOwner = navBackStackEntry
+                            )
+                            AddTimeBlockScreen(
+                                viewModel = viewModel,
+                                snackbarHostState = snackbarHostState,
+                                onNavigate = { navigateEvent -> navController.navigate(navigateEvent.route) },
+                                onNavigateUp = { navController.popBackStack() },
                             )
                         }
                     }

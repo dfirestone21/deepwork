@@ -1,6 +1,5 @@
 package com.example.deepwork.domain.usecase.session
 
-import com.example.deepwork.domain.exception.SessionException
 import com.example.deepwork.domain.model.Result
 import com.example.deepwork.domain.model.Session
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase

@@ -14,4 +14,5 @@ sealed interface AddTimeBlockEvent {
     data object NavigateUp : AddTimeBlockEvent
     data class CategorySelected(val category: Category) : AddTimeBlockEvent
     data class CategoryUnselected(val category: Category) : AddTimeBlockEvent
+    data object CreateCategoryClicked : AddTimeBlockEvent
 }

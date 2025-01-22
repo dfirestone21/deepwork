@@ -2,10 +2,13 @@ package com.example.deepwork.domain.model
 
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 sealed class TimeBlock(
-    open val id: String,
-    open val duration: Duration
+    open val id: Uuid,
+    open val duration: Duration,
+    open val createdAt: Long,
+    open val updatedAt: Long
 ) {
     abstract val minDuration: Duration
     abstract val maxDuration: Duration
@@ -24,9 +27,11 @@ sealed class TimeBlock(
             categories: List<Category> = listOf(Category.DEFAULT)
         ): WorkBlock {
             return WorkBlock.DeepWorkBlock(
-                id = "",
+                id = Uuid.random(),
                 duration = duration,
-                categories = categories
+                categories = categories,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = 0
             )
         }
 
@@ -35,16 +40,20 @@ sealed class TimeBlock(
             categories: List<Category> = listOf(Category.DEFAULT)
         ): WorkBlock {
             return WorkBlock.ShallowWorkBlock(
-                id = "",
+                id = Uuid.random(),
                 duration = duration,
-                categories = categories
+                categories = categories,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = 0
             )
         }
 
         fun breakBlock(duration: Duration = BreakBlock.DURATION_MIN): BreakBlock {
             return BreakBlock(
-                id = "",
-                duration = duration
+                id = Uuid.random(),
+                duration = duration,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = 0
             )
         }
 
@@ -65,32 +74,40 @@ sealed class TimeBlock(
         }
     }
 
-    abstract fun copyValues(
-        id: String = this.id,
-        duration: Duration = this.duration
+    abstract fun copyObject(
+        id: Uuid = this.id,
+        duration: Duration = this.duration,
+        createdAt: Long = this.createdAt,
+        updatedAt: Long = this.updatedAt
     ): TimeBlock
 
     sealed class WorkBlock(
-        override val id: String,
+        override val id: Uuid,
         override val duration: Duration,
+        override val createdAt: Long,
+        override val updatedAt: Long,
         open val categories: List<Category>
-    ) : TimeBlock(id, duration) {
+    ) : TimeBlock(id, duration, createdAt, updatedAt) {
 
         companion object {
             const val CATEGORIES_MAX = 3
         }
 
-        abstract fun copyValues(
-            id: String,
+        abstract fun copyObject(
+            id: Uuid,
             duration: Duration,
-            categories: List<Category>
+            categories: List<Category>,
+            createdAt: Long,
+            updatedAt: Long
         ): WorkBlock
 
         data class DeepWorkBlock(
-            override val id: String,
+            override val id: Uuid,
             override val duration: Duration,
+            override val createdAt: Long,
+            override val updatedAt: Long,
             override val categories: List<Category>
-        ) : WorkBlock(id, duration, categories) {
+        ) : WorkBlock(id, duration, createdAt, updatedAt, categories) {
 
             override val minDuration: Duration = DURATION_MIN
             override val maxDuration: Duration = DURATION_MAX
@@ -101,20 +118,22 @@ sealed class TimeBlock(
                 val DURATION_MAX: Duration = 120.minutes
             }
 
-            override fun copyValues(id: String, duration: Duration, categories: List<Category>): WorkBlock {
-                return copy(id, duration, categories)
+            override fun copyObject(id: Uuid, duration: Duration, categories: List<Category>, createdAt: Long, updatedAt: Long): WorkBlock {
+                return copy(id, duration, createdAt, updatedAt, categories)
             }
 
-            override fun copyValues(id: String, duration: Duration): TimeBlock {
-                return copy(id, duration, categories)
+            override fun copyObject(id: Uuid, duration: Duration, createdAt: Long, updatedAt: Long): TimeBlock {
+                return copy(id, duration, createdAt, updatedAt, categories)
             }
         }
 
         data class ShallowWorkBlock(
-            override val id: String,
+            override val id: Uuid,
             override val duration: Duration,
+            override val createdAt: Long,
+            override val updatedAt: Long,
             override val categories: List<Category>
-        ) : WorkBlock(id, duration, categories) {
+        ) : WorkBlock(id, duration, createdAt, updatedAt, categories) {
 
             override val minDuration: Duration = DURATION_MIN
             override val maxDuration: Duration = DURATION_MAX
@@ -125,20 +144,22 @@ sealed class TimeBlock(
                 val DURATION_MAX: Duration = 60.minutes
             }
 
-            override fun copyValues(id: String, duration: Duration, categories: List<Category>): WorkBlock {
-                return copy(id, duration, categories)
+            override fun copyObject(id: Uuid, duration: Duration, categories: List<Category>, createdAt: Long, updatedAt: Long): WorkBlock {
+                return copy(id, duration, createdAt, updatedAt, categories)
             }
 
-            override fun copyValues(id: String, duration: Duration): TimeBlock {
-                return copy(id, duration, categories)
+            override fun copyObject(id: Uuid, duration: Duration, createdAt: Long, updatedAt: Long): TimeBlock {
+                return copy(id, duration, createdAt, updatedAt, categories)
             }
         }
     }
 
     data class BreakBlock(
-        override val id: String,
-        override val duration: Duration
-    ) : TimeBlock(id, duration) {
+        override val id: Uuid,
+        override val duration: Duration,
+        override val createdAt: Long,
+        override val updatedAt: Long
+    ) : TimeBlock(id, duration, createdAt, updatedAt) {
 
         override val minDuration: Duration = DURATION_MIN
         override val maxDuration: Duration = DURATION_MAX
@@ -149,8 +170,8 @@ sealed class TimeBlock(
             val DURATION_MAX: Duration = 60.minutes
         }
 
-        override fun copyValues(id: String, duration: Duration): TimeBlock {
-            return copy(id, duration)
+        override fun copyObject(id: Uuid, duration: Duration, createdAt: Long, updatedAt: Long): TimeBlock {
+            return copy(id, duration, createdAt, updatedAt)
         }
     }
 }

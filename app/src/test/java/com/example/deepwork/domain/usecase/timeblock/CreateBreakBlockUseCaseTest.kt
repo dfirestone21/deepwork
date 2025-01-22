@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 class CreateBreakBlockUseCaseTest {
     private lateinit var createBreakBlock: CreateBreakBlockUseCase
@@ -16,13 +17,13 @@ class CreateBreakBlockUseCaseTest {
     }
 
     @Test
-    fun `when creating break block, should generate id`() = runTest {
+    fun `when creating break block, should generate uuid`() = runTest {
         // given
         val block = TimeBlock.breakBlock()
         // when
         val createdBlock = createBreakBlock(block).getOrThrow()
         // then
-        assert(createdBlock.id.isNotBlank())
+        assert(createdBlock.id != Uuid.NIL)
     }
 
     @Test(expected = TimeBlockException.InvalidDurationTooShort::class)

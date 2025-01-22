@@ -21,11 +21,11 @@ class TimeBlockValidatorImpl @Inject constructor(
     override fun validateDuration(blockType: TimeBlock.BlockType, duration: Duration) {
         val minDuration = TimeBlock.minDuration(blockType)
         if (duration < minDuration) {
-            throw TimeBlockException.InvalidDurationTooShort(minDuration.toString())
+            throw TimeBlockException.InvalidDurationTooShort(minDuration.inWholeMinutes.toString())
         }
         val maxDuration = TimeBlock.maxDuration(blockType)
         if (duration > maxDuration) {
-            throw TimeBlockException.InvalidDurationTooLong(maxDuration.toString())
+            throw TimeBlockException.InvalidDurationTooLong(maxDuration.inWholeMinutes.toString())
         }
 
     }
@@ -34,7 +34,7 @@ class TimeBlockValidatorImpl @Inject constructor(
         if (categories.isEmpty() || categories.size > WorkBlock.CATEGORIES_MAX) {
             throw TimeBlockException.InvalidCategoriesCount()
         }
-        if (categories.size != categories.distinctBy { it.id }.size) {
+        if (categories.size != categories.distinctBy { it.uuid }.size) {
             throw TimeBlockException.DuplicateCategories()
         }
     }

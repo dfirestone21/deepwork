@@ -3,13 +3,15 @@ package com.example.deepwork.domain.model
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 data class Session(
-    val id: String,
+    val id: Uuid,
     val name: String,
     val description: String?,
     val timeBlocks: List<TimeBlock>,
+    val createdAt: Long,
+    val updatedAt: Long
 ) {
     val totalDuration = timeBlocks.sumOf { it.duration.inWholeMilliseconds }.milliseconds
 
@@ -20,10 +22,12 @@ data class Session(
 
         fun create(name: String): Session {
             return Session(
-                id = "",
+                id = Uuid.random(),
                 name = name,
                 description = null,
-                timeBlocks = emptyList()
+                timeBlocks = emptyList(),
+                createdAt = System.currentTimeMillis(),
+                updatedAt = 0
             )
         }
     }

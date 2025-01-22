@@ -9,6 +9,7 @@ import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 class AddTimeBlockUseCaseTest {
     private lateinit var addTimeBlock: AddTimeBlockUseCase
@@ -259,10 +260,12 @@ class AddTimeBlockUseCaseTest {
 
     private fun createDefaultSession(): Session {
         return Session(
-            id = "1",
+            id = Uuid.random(),
             name = "Morning Focus",
             description = "First session",
-            timeBlocks = emptyList()
+            timeBlocks = emptyList(),
+            createdAt = 0,
+            updatedAt = 0
         )
     }
 }
