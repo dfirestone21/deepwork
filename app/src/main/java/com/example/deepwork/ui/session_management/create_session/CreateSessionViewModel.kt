@@ -7,8 +7,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deepwork.domain.exception.SessionException
-import com.example.deepwork.domain.model.Session
-import com.example.deepwork.domain.model.TimeBlock
+import com.example.deepwork.domain.model.ScheduledSession
+import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase
@@ -35,7 +35,7 @@ class CreateSessionViewModel @Inject constructor(
 
     var state by mutableStateOf(CreateSessionUiState())
         private set
-    private var session = Session.create("")
+    private var session = ScheduledSession.create("", System.currentTimeMillis())
 
     fun onEvent(event: CreateSessionEvent) {
         when (event) {
@@ -64,7 +64,7 @@ class CreateSessionViewModel @Inject constructor(
         }
     }
 
-    private fun addTimeBlock(timeBlock: TimeBlock) {
+    private fun addTimeBlock(timeBlock: ScheduledTimeBlock) {
         viewModelScope.launch {
             addTimeBlock(session, timeBlock)
                 .onSuccess { updatedSession ->

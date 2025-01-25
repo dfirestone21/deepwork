@@ -2,13 +2,12 @@ package com.example.deepwork.domain.usecase.session
 
 import com.example.deepwork.domain.exception.SessionException
 import com.example.deepwork.domain.model.Result
-import com.example.deepwork.domain.model.Session
-import com.example.deepwork.domain.model.Session.Companion.MAX_TIME_BLOCKS
-import com.example.deepwork.domain.model.TimeBlock
-import com.example.deepwork.domain.model.TimeBlock.*
+import com.example.deepwork.domain.model.ScheduledSession
+import com.example.deepwork.domain.model.ScheduledSession.Companion.MAX_TIME_BLOCKS
+import com.example.deepwork.domain.model.ScheduledTimeBlock
+import com.example.deepwork.domain.model.ScheduledTimeBlock.*
 import javax.inject.Inject
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 class AddTimeBlockUseCase @Inject constructor() {
 
@@ -16,7 +15,7 @@ class AddTimeBlockUseCase @Inject constructor() {
         const val POSITION_DEFAULT = -1
     }
 
-    suspend operator fun invoke(session: Session, timeBlock: TimeBlock, position: Int = POSITION_DEFAULT): Result<Session> {
+    suspend operator fun invoke(session: ScheduledSession, timeBlock: ScheduledTimeBlock, position: Int = POSITION_DEFAULT): Result<ScheduledSession> {
         return try {
             validate(session, timeBlock, position)
             val timeBlocks = addTimeBlock(session, timeBlock, position)
@@ -28,7 +27,7 @@ class AddTimeBlockUseCase @Inject constructor() {
 
     }
     
-    private fun validate(session: Session, timeBlock: TimeBlock, position: Int) {
+    private fun validate(session: ScheduledSession, timeBlock: ScheduledTimeBlock, position: Int) {
         val invalidPosition = position < POSITION_DEFAULT || position > session.timeBlocks.size - 1
         if (invalidPosition) {
             throw SessionException.InvalidTimeBlockPosition()
@@ -36,37 +35,38 @@ class AddTimeBlockUseCase @Inject constructor() {
         if (session.timeBlocks.size >= MAX_TIME_BLOCKS) {
             throw SessionException.MaxTimeBlocksReached()
         }
-        val cantStartWithBreakBlock = timeBlock is BreakBlock && session.timeBlocks.isEmpty()
+        val cantStartWithBreakBlock = timeBlock.isBreakBlock && session.timeBlocks.isEmpty()
         if (cantStartWithBreakBlock) {
             throw SessionException.InvalidBreakPosition()
         }
         val previousBlock = previousBlock(session, position)
         val nextBlock = nextBlock(session, position)
 
-        val consecutiveBreakBlocks = timeBlock is BreakBlock && (previousBlock is BreakBlock || nextBlock is BreakBlock)
+        val hasAdjacentBreakBlock = previousBlock?.isBreakBlock == true || nextBlock?.isBreakBlock == true
+        val consecutiveBreakBlocks = timeBlock.isBreakBlock && hasAdjacentBreakBlock
         if (consecutiveBreakBlocks) {
             throw SessionException.ConsecutiveBlockTypes()
         }
-        val maxSessionDurationReached = session.totalDuration + timeBlock.duration > Session.MAX_DURATION
+        val maxSessionDurationReached = session.totalDuration + timeBlock.duration > ScheduledSession.MAX_DURATION
         if (maxSessionDurationReached) {
             throw SessionException.MaxSessionDurationReached()
         }
-        if (timeBlock is WorkBlock) {
+        if (timeBlock.isWorkBlock) {
             val consecutiveWorkDuration = calculateConsecutiveWorkDuration(session, position, timeBlock)
-            if (consecutiveWorkDuration > Session.DURATION_MAX_CONSECUTIVE_DEEP_WORK) {
+            if (consecutiveWorkDuration > ScheduledSession.DURATION_MAX_CONSECUTIVE_DEEP_WORK) {
                 throw SessionException.MaxConsecutiveDeepWorkDurationReached()
             }
         }
     }
 
-    private fun calculateConsecutiveWorkDuration(session: Session, position: Int, newBlock: TimeBlock): Duration {
+    private fun calculateConsecutiveWorkDuration(session: ScheduledSession, position: Int, newBlock: ScheduledTimeBlock): Duration {
         val blocks = addTimeBlock(session, newBlock, position)
         var maxConsecutiveDuration = Duration.ZERO
         var currentConsecutiveDuration = Duration.ZERO
 
         blocks.forEach { block ->
-            when (block) {
-                is WorkBlock -> {
+            when {
+                block.isWorkBlock -> {
                     currentConsecutiveDuration += block.duration
                     if (currentConsecutiveDuration > maxConsecutiveDuration) {
                         maxConsecutiveDuration = currentConsecutiveDuration
@@ -79,7 +79,7 @@ class AddTimeBlockUseCase @Inject constructor() {
         return maxConsecutiveDuration
     }
 
-    private fun previousBlock(session: Session, position: Int): TimeBlock? {
+    private fun previousBlock(session: ScheduledSession, position: Int): ScheduledTimeBlock? {
         return if (position == POSITION_DEFAULT) {
             session.timeBlocks.lastOrNull()
         } else {
@@ -87,7 +87,7 @@ class AddTimeBlockUseCase @Inject constructor() {
         }
     }
 
-    private fun nextBlock(session: Session, position: Int): TimeBlock? {
+    private fun nextBlock(session: ScheduledSession, position: Int): ScheduledTimeBlock? {
         return if (position == POSITION_DEFAULT) {
             null
         } else {
@@ -95,7 +95,7 @@ class AddTimeBlockUseCase @Inject constructor() {
         }
     }
 
-    private fun addTimeBlock(session: Session, timeBlock: TimeBlock, position: Int): List<TimeBlock> {
+    private fun addTimeBlock(session: ScheduledSession, timeBlock: ScheduledTimeBlock, position: Int): List<ScheduledTimeBlock> {
         return if (position == POSITION_DEFAULT) {
             session.timeBlocks + timeBlock
         } else {

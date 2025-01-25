@@ -8,9 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.deepwork.domain.business.TimeBlockValidator
 import com.example.deepwork.domain.model.Category
 import com.example.deepwork.domain.model.Result
-import com.example.deepwork.domain.model.TimeBlock
-import com.example.deepwork.domain.usecase.timeblock.CreateBreakBlockUseCase
-import com.example.deepwork.domain.usecase.timeblock.CreateWorkBlockUseCase
+import com.example.deepwork.domain.model.ScheduledTimeBlock
+import com.example.deepwork.domain.usecase.timeblock.CreateTimeBlockUseCase
 import com.example.deepwork.domain.usecase.timeblock.category.GetCategoriesUseCase
 import com.example.deepwork.ui.model.InputField
 import com.example.deepwork.ui.util.UiEvent
@@ -23,15 +22,14 @@ import kotlin.time.Duration.Companion.minutes
 
 @HiltViewModel
 class AddTimeBlockViewModel @Inject constructor(
-    private val createWorkBlock: CreateWorkBlockUseCase,
-    private val createBreakBlock: CreateBreakBlockUseCase,
+    private val createTimeBlock: CreateTimeBlockUseCase,
     private val timeBlockValidator: TimeBlockValidator,
     private val getCategories: GetCategoriesUseCase
 ) : ViewModel() {
 
     var state by mutableStateOf(AddTimeBlockState(
         duration = InputField(
-            placeHolder = placeHolderFromBlockType(TimeBlock.BlockType.DEEP),
+            placeHolder = placeHolderFromBlockType(ScheduledTimeBlock.BlockType.DEEP_WORK),
         )
     ))
         private set
@@ -70,11 +68,12 @@ class AddTimeBlockViewModel @Inject constructor(
             is AddTimeBlockEvent.SaveClicked -> TODO()
             is AddTimeBlockEvent.CategorySelected -> onCategorySelected(event.category)
             is AddTimeBlockEvent.CategoryUnselected -> TODO()
-            is AddTimeBlockEvent.CreateCategoryClicked -> TODO() // show bottom sheet for creating category
+            is AddTimeBlockEvent.CreateCategoryClicked -> showAddCategoryBottomSheet()
+            is AddTimeBlockEvent.AddCategoryBottomSheetDismissed -> hideAddCategoryBottomSheet()
         }
     }
 
-    private fun onBlockTypeSelected(blockType: TimeBlock.BlockType) {
+    private fun onBlockTypeSelected(blockType: ScheduledTimeBlock.BlockType) {
         state = state.copy(
             selectedBlockType = blockType,
             duration = state.duration.copy(
@@ -129,9 +128,9 @@ class AddTimeBlockViewModel @Inject constructor(
         }
     }
 
-    private fun placeHolderFromBlockType(blockType: TimeBlock.BlockType): String {
-        val min = TimeBlock.minDuration(blockType).inWholeMinutes
-        val max = TimeBlock.maxDuration(blockType).inWholeMinutes
+    private fun placeHolderFromBlockType(blockType: ScheduledTimeBlock.BlockType): String {
+        val min = blockType.minDuration.inWholeMinutes
+        val max = blockType.maxDuration.inWholeMinutes
         return "$min to $max minutes"
     }
 
@@ -150,6 +149,14 @@ class AddTimeBlockViewModel @Inject constructor(
         runCatching { timeBlockValidator.validateCategories(state.selectedBlockType, selectedCategories) }
             .onSuccess { state = state.copy(categories = updatedSelectableCategories) }
             .onFailure { exception -> showSnackbar(exception.message ?: "Failed to validate categories") }
+    }
+
+    private fun showAddCategoryBottomSheet() {
+        state = state.copy(showAddCategoryBottomSheet = true)
+    }
+
+    private fun hideAddCategoryBottomSheet() {
+        state = state.copy(showAddCategoryBottomSheet = false)
     }
 
     private fun showSnackbar(message: String) {

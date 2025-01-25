@@ -2,27 +2,27 @@ package com.example.deepwork.domain.usecase.timeblock
 
 import com.example.deepwork.domain.business.TimeBlockValidator
 import com.example.deepwork.domain.model.Result
-import com.example.deepwork.domain.model.TimeBlock.*
-import java.util.UUID
+import com.example.deepwork.domain.model.template.TimeBlockTemplate
 import javax.inject.Inject
+import kotlin.uuid.Uuid
 
-class CreateWorkBlockUseCase @Inject constructor(
+class CreateTimeBlockUseCase @Inject constructor(
     private val timeBlockValidator: TimeBlockValidator
 ) {
 
-    suspend operator fun invoke(timeBlock: WorkBlock): Result<WorkBlock> {
+    suspend operator fun invoke(timeBlock: TimeBlockTemplate): Result<TimeBlockTemplate> {
         return try {
             validate(timeBlock)
-            val preparedWorkBlock = timeBlock.copyObject(
-                id = UUID.randomUUID().toString()
-            ) as WorkBlock
+            val preparedWorkBlock = timeBlock.copy(
+                id = Uuid.random()
+            )
             Result.Success(preparedWorkBlock)
         } catch (e: Exception) {
             Result.Error(e)
         }
     }
 
-    private fun validate(timeBlock: WorkBlock) {
+    private fun validate(timeBlock: TimeBlockTemplate) {
         timeBlockValidator.validate(timeBlock)
     }
 }

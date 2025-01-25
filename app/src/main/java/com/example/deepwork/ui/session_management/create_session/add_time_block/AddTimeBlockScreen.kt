@@ -50,11 +50,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.compose.DeepWorkTheme
 import com.example.deepwork.R
 import com.example.deepwork.domain.model.Category
-import com.example.deepwork.domain.model.TimeBlock
+import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.ui.components.ActionButton
 import com.example.deepwork.ui.components.SecondaryButton
 import com.example.deepwork.ui.components.TextField
 import com.example.deepwork.ui.model.InputField
+import com.example.deepwork.ui.session_management.create_session.add_time_block.add_category.AddCategoryBottomSheet
 import com.example.deepwork.ui.util.UiEvent
 
 @Composable
@@ -109,6 +110,12 @@ fun AddTimeBlockContent(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.Start
         ) {
+            if (state.showAddCategoryBottomSheet) {
+                AddCategoryBottomSheet(
+                    onDismiss = { onEvent(AddTimeBlockEvent.AddCategoryBottomSheetDismissed) },
+                    snackbarHostState = SnackbarHostState()
+                )
+            }
             TimeBlockSelectionChips(
                 state = state,
                 onEvent = onEvent
@@ -117,7 +124,7 @@ fun AddTimeBlockContent(
                 state = state,
                 onDurationChanged = { onEvent(AddTimeBlockEvent.DurationChanged(it)) }
             )
-            val shouldShowCategories = state.selectedBlockType != TimeBlock.BlockType.BREAK
+            val shouldShowCategories = state.selectedBlockType != ScheduledTimeBlock.BlockType.BREAK
             if (shouldShowCategories) {
                 CategoriesComponent(
                     state = state,
@@ -188,21 +195,21 @@ fun TimeBlockSelectionChips(
     ) {
         TimeBlockChip(
             title = "Deep Work",
-            isSelected = state.selectedBlockType == TimeBlock.BlockType.DEEP,
+            isSelected = state.selectedBlockType == ScheduledTimeBlock.BlockType.DEEP_WORK,
             color = MaterialTheme.colorScheme.primary,
-            onClick = { onEvent(AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.DEEP)) }
+            onClick = { onEvent(AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.DEEP_WORK)) }
         )
         TimeBlockChip(
             title = "Shallow Work",
-            isSelected = state.selectedBlockType == TimeBlock.BlockType.SHALLOW,
+            isSelected = state.selectedBlockType == ScheduledTimeBlock.BlockType.SHALLOW_WORK,
             color = colorResource(R.color.timeblock_shallowwork),
-            onClick = { onEvent(AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.SHALLOW)) }
+            onClick = { onEvent(AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.SHALLOW_WORK)) }
         )
         TimeBlockChip(
             title = "Break",
-            isSelected = state.selectedBlockType == TimeBlock.BlockType.BREAK,
+            isSelected = state.selectedBlockType == ScheduledTimeBlock.BlockType.BREAK,
             color = colorResource(R.color.timeblock_break),
-            onClick = { onEvent(AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.BREAK)) }
+            onClick = { onEvent(AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.BREAK)) }
         )
     }
 }
@@ -290,7 +297,7 @@ fun AddCategoryChipButton(
 ) {
     InputChip(
         label = { Text(
-            text = "Add New",
+            text = "Create New",
             color = MaterialTheme.colorScheme.onPrimaryContainer,
         ) },
         selected = false,
@@ -359,7 +366,7 @@ fun SelectedCategory(
 fun SelectedCategoryPreview() {
     DeepWorkTheme {
         SelectedCategory(
-            category = Category("1", "Coding", Color.Blue.toArgb()),
+            category = Category.create("Coding", Color.Blue.toArgb()),
             onUnselected = { }
         )
     }
@@ -418,7 +425,7 @@ fun SelectableCategories(
         modifier = Modifier.fillMaxWidth()
     ) {
         AddCategoryChipButton(
-            onClick = { },
+            onClick = onAddNewClicked,
         )
         categories.forEach { category ->
             SelectableCategory(
@@ -447,7 +454,7 @@ fun CategoriesComponent(
         Spacer(modifier = Modifier.height(4.dp))
         Text("Add Categories",
             style = MaterialTheme.typography.titleMedium,)
-        Text("Selected (${state.selectedCategoriesCount}/${TimeBlock.WorkBlock.CATEGORIES_MAX})")
+        Text("Selected (${state.selectedCategoriesCount}/${ScheduledTimeBlock.CATEGORIES_MAX})")
         SelectedCategories(
             categories = state.categories.filter { it.isSelected }.map { it.category },
             onUnselected = { onEvent(AddTimeBlockEvent.CategoryUnselected(it)) }
@@ -466,7 +473,7 @@ fun AddTimeBlockContentPreview() {
     DeepWorkTheme {
         AddTimeBlockContent(
             state = AddTimeBlockState(
-                selectedBlockType = TimeBlock.BlockType.DEEP,
+                selectedBlockType = ScheduledTimeBlock.BlockType.DEEP_WORK,
                 duration = InputField(
                     value = "",
                     placeHolder = "25 to 120 minutes"
@@ -516,13 +523,13 @@ fun ConfirmCancelDialog(
 
 private fun testCategories(): List<SelectableCategory> {
     return listOf(
-        Category("1", "Coding", Color.Blue.toArgb()),
-        Category("2", "Design", Color.Red.toArgb()),
-        Category("3", "Writing", Color.Green.toArgb()),
-        Category("4", "Research", Color.Yellow.toArgb()),
-        Category("5", "Learning", Color.Magenta.toArgb()),
+        Category.create("Coding", Color.Blue.toArgb()),
+        Category.create("Design", Color.Red.toArgb()),
+        Category.create("Writing", Color.Green.toArgb()),
+        Category.create("Research", Color.Yellow.toArgb()),
+        Category.create("Learning", Color.Magenta.toArgb()),
     ).map { category ->
-        val isSelected = category.uuid == "1" || category.uuid == "5"
+        val isSelected = category.name == "Coding" || category.name == "Learning"
         SelectableCategory(category, isSelected)
     }
 }

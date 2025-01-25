@@ -2,7 +2,7 @@ package com.example.deepwork.domain.model.template
 
 import kotlin.uuid.Uuid
 
-data class SessionTemplate(
+data class TemplateSession(
     val id: Uuid,
     val name: String,
     val description: String?,

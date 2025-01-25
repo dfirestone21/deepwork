@@ -6,19 +6,16 @@ import com.example.deepwork.domain.business.TimeBlockValidator
 import com.example.deepwork.domain.exception.TimeBlockException
 import com.example.deepwork.domain.model.Category
 import com.example.deepwork.domain.model.Result
-import com.example.deepwork.domain.model.TimeBlock
-import com.example.deepwork.domain.usecase.timeblock.CreateBreakBlockUseCase
-import com.example.deepwork.domain.usecase.timeblock.CreateWorkBlockUseCase
+import com.example.deepwork.domain.model.ScheduledTimeBlock
+import com.example.deepwork.domain.usecase.timeblock.CreateTimeBlockUseCase
 import com.example.deepwork.domain.usecase.timeblock.category.GetCategoriesUseCase
 import com.example.deepwork.ui.util.UiEvent
 import io.mockk.Runs
-import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -36,27 +33,33 @@ import org.junit.Test
 
 class AddTimeBlockViewModelTest {
     private lateinit var viewModel: AddTimeBlockViewModel
-    private lateinit var createWorkBlock: CreateWorkBlockUseCase
-    private lateinit var createBreakBlock: CreateBreakBlockUseCase
+    private lateinit var createTimeBlock: CreateTimeBlockUseCase
     private lateinit var timeBlockValidator: TimeBlockValidator
     private lateinit var getCategories: GetCategoriesUseCase
     private var testScope: TestScope? = null
+    private lateinit var testCategories: List<Category>
 
     @Before
     fun setup() {
+        testCategories = listOf(
+            Category.create("Coding", Color.Blue.toArgb()),
+            Category.create("Design", Color.Red.toArgb()),
+            Category.create("Writing", Color.Green.toArgb()),
+            Category.create("Research", Color.Yellow.toArgb()),
+            Category.create("Learning", Color.Magenta.toArgb()),
+        )
         Dispatchers.setMain(StandardTestDispatcher())
-        createWorkBlock = mockk()
-        createBreakBlock = mockk()
+        createTimeBlock = mockk()
         timeBlockValidator = mockk() {
             every { validateDuration(any(), any()) } just Runs
             every { validateCategories(any(), any()) } just Runs
         }
         getCategories = mockk()
-        coEvery { getCategories() } returns flowOf(Result.Success(testCategories()))
+        coEvery { getCategories() } returns flowOf(Result.Success(testCategories))
     }
 
     private fun initViewModel() {
-        viewModel = AddTimeBlockViewModel(createWorkBlock, createBreakBlock, timeBlockValidator, getCategories)
+        viewModel = AddTimeBlockViewModel(createTimeBlock, timeBlockValidator, getCategories)
     }
 
     private fun initViewModel(testScope: TestScope, advanceUntilIdle: Boolean = true) {
@@ -70,7 +73,7 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `default selectedBlockType should be DEEP`() {
         // given
-        val expectedBlockType = TimeBlock.BlockType.DEEP
+        val expectedBlockType = ScheduledTimeBlock.BlockType.DEEP_WORK
         initViewModel()
 
         // when
@@ -83,7 +86,7 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `when selectedBlockType is DEEP, duration placeholder should be DEEP MIN to MAX`() {
         // given
-        val expectedDurationPlaceholder = "${TimeBlock.WorkBlock.DeepWorkBlock.DURATION_MIN.inWholeMinutes} to ${TimeBlock.WorkBlock.DeepWorkBlock.DURATION_MAX.inWholeMinutes} minutes"
+        val expectedDurationPlaceholder = "${ScheduledTimeBlock.Durations.DEEP_WORK_DURATION_MIN.inWholeMinutes} to ${ScheduledTimeBlock.Durations.DEEP_WORK_DURATION_MAX.inWholeMinutes} minutes"
         initViewModel()
 
         // when
@@ -96,11 +99,11 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `when selectedBlockType is SHALLOW, duration placeholder should be SHALLOW MIN to MAX`() {
         // given
-        val expectedDurationPlaceholder = "${TimeBlock.WorkBlock.ShallowWorkBlock.DURATION_MIN.inWholeMinutes} to ${TimeBlock.WorkBlock.ShallowWorkBlock.DURATION_MAX.inWholeMinutes} minutes"
+        val expectedDurationPlaceholder = "${ScheduledTimeBlock.Durations.SHALLOW_WORK_DURATION_MIN.inWholeMinutes} to ${ScheduledTimeBlock.Durations.SHALLOW_WORK_DURATION_MAX.inWholeMinutes} minutes"
         initViewModel()
 
         // when
-        val event = AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.SHALLOW)
+        val event = AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.SHALLOW_WORK)
         viewModel.onEvent(event)
         val state = viewModel.state
 
@@ -111,11 +114,11 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `when selectedBlockType is BREAK, duration placeholder should be BREAK MIN to MAX`() {
         // given
-        val expectedDurationPlaceholder = "${TimeBlock.BreakBlock.DURATION_MIN.inWholeMinutes} to ${TimeBlock.BreakBlock.DURATION_MAX.inWholeMinutes} minutes"
+        val expectedDurationPlaceholder = "${ScheduledTimeBlock.Durations.BREAK_DURATION_MIN.inWholeMinutes} to ${ScheduledTimeBlock.Durations.BREAK_DURATION_MAX.inWholeMinutes} minutes"
         initViewModel()
 
         // when
-        val event = AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.BREAK)
+        val event = AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.BREAK)
         viewModel.onEvent(event)
         val state = viewModel.state
 
@@ -126,11 +129,11 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `onEvent BlockTypeSelected when selected block type is DEEP, selectedBlockType should be DEEP`() {
         // given
-        val expectedBlockType = TimeBlock.BlockType.DEEP
+        val expectedBlockType = ScheduledTimeBlock.BlockType.DEEP_WORK
         initViewModel()
 
         // when
-        val event = AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.DEEP)
+        val event = AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.DEEP_WORK)
         viewModel.onEvent(event)
         val state = viewModel.state
 
@@ -141,11 +144,11 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `onEvent BlockTypeSelected when selected block type is SHALLOW, selectedBlockType should be SHALLOW`() {
         // given
-        val expectedBlockType = TimeBlock.BlockType.SHALLOW
+        val expectedBlockType = ScheduledTimeBlock.BlockType.SHALLOW_WORK
         initViewModel()
 
         // when
-        val event = AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.SHALLOW)
+        val event = AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.SHALLOW_WORK)
         viewModel.onEvent(event)
         val state = viewModel.state
 
@@ -156,11 +159,11 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `onEvent BlockTypeSelected when selected block type is BREAK, selectedBlockType should be BREAK`() {
         // given
-        val expectedBlockType = TimeBlock.BlockType.BREAK
+        val expectedBlockType = ScheduledTimeBlock.BlockType.BREAK
         initViewModel()
 
         // when
-        val event = AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.BREAK)
+        val event = AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.BREAK)
         viewModel.onEvent(event)
         val state = viewModel.state
 
@@ -180,7 +183,7 @@ class AddTimeBlockViewModelTest {
         val durationBefore = viewModel.state.duration.value
         assertNotEquals(durationBefore, expectedDuration)
 
-        val event = AddTimeBlockEvent.BlockTypeSelected(TimeBlock.BlockType.SHALLOW)
+        val event = AddTimeBlockEvent.BlockTypeSelected(ScheduledTimeBlock.BlockType.SHALLOW_WORK)
         viewModel.onEvent(event)
         val state = viewModel.state
         val actualDuration = state.duration
@@ -366,7 +369,7 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `UI State should contain users categories`() = runTest {
         // given
-        val expectedCategories = testCategories()
+        val expectedCategories = testCategories
         coEvery { getCategories() } returns flowOf(Result.Success(expectedCategories))
         initViewModel()
 
@@ -401,7 +404,7 @@ class AddTimeBlockViewModelTest {
     fun `onEvent CategorySelected should set isSelected to true on Category`() = runTest {
         // given
         val expectedCategory = SelectableCategory(
-            category = testCategories().first(),
+            category = testCategories.first(),
             isSelected = true
         )
         initViewModel(this)
@@ -423,7 +426,7 @@ class AddTimeBlockViewModelTest {
         initViewModel(this)
 
         // when
-        val event = AddTimeBlockEvent.CategorySelected(testCategories().first())
+        val event = AddTimeBlockEvent.CategorySelected(testCategories.first())
         viewModel.onEvent(event)
         val actualSelectedCategories = viewModel.state.selectedCategoriesCount
 
@@ -434,7 +437,7 @@ class AddTimeBlockViewModelTest {
     @Test
     fun `onEvent CategorySelected when category is already selected, should remain isSelected == true`() = runTest {
         // given
-        val category = testCategories().first()
+        val category = testCategories.first()
         initViewModel(this)
 
         // when
@@ -452,7 +455,7 @@ class AddTimeBlockViewModelTest {
     fun `onEvent CategorySelected when category is already selected, selectedCategory count should not change`() = runTest {
         // given
         val expectedSelectedCategories = 1
-        val category = testCategories().first()
+        val category = testCategories.first()
         initViewModel(this)
 
         // when
@@ -472,14 +475,14 @@ class AddTimeBlockViewModelTest {
         initViewModel(this)
 
         // when
-        repeat(TimeBlock.WorkBlock.CATEGORIES_MAX) { count ->
-            val category = testCategories()[count]
+        repeat(ScheduledTimeBlock.CATEGORIES_MAX) { count ->
+            val category = testCategories[count]
             val event = AddTimeBlockEvent.CategorySelected(category)
             viewModel.onEvent(event)
         }
         val actualEvents = mutableListOf<UiEvent>()
         val job = launch { viewModel.uiEvent.toList(actualEvents) }
-        val event = AddTimeBlockEvent.CategorySelected(testCategories().last())
+        val event = AddTimeBlockEvent.CategorySelected(testCategories.last())
         viewModel.onEvent(event)
         advanceUntilIdle()
         val actualEvent = actualEvents.firstOrNull()
@@ -496,7 +499,7 @@ class AddTimeBlockViewModelTest {
         initViewModel(this)
 
         // when
-        val event = AddTimeBlockEvent.CategorySelected(testCategories().first())
+        val event = AddTimeBlockEvent.CategorySelected(testCategories.first())
         viewModel.onEvent(event)
         val actualCategories = viewModel.state.categories
         val actualCategory = actualCategories.first()
@@ -513,7 +516,7 @@ class AddTimeBlockViewModelTest {
         initViewModel(this)
 
         // when
-        val event = AddTimeBlockEvent.CategorySelected(testCategories().first())
+        val event = AddTimeBlockEvent.CategorySelected(testCategories.first())
         viewModel.onEvent(event)
         val actualSelectedCategories = viewModel.state.selectedCategoriesCount
 
@@ -521,14 +524,34 @@ class AddTimeBlockViewModelTest {
         assertEquals(expectedSelectedCategoriesCount, actualSelectedCategories)
     }
 
-    private fun testCategories(): List<Category> {
-        return listOf(
-            Category("1", "Coding", Color.Blue.toArgb()),
-            Category("2", "Design", Color.Red.toArgb()),
-            Category("3", "Writing", Color.Green.toArgb()),
-            Category("4", "Research", Color.Yellow.toArgb()),
-            Category("5", "Learning", Color.Magenta.toArgb()),
-        )
+    @Test
+    fun `onEvent CreateCategoryClicked should set showAddCategoryBottomSheet to true`() {
+        // given
+        val expectedShowAddCategoryBottomSheet = true
+        initViewModel()
+
+        // when
+        val event = AddTimeBlockEvent.CreateCategoryClicked
+        viewModel.onEvent(event)
+        val state = viewModel.state
+
+        // then
+        assert(state.showAddCategoryBottomSheet == expectedShowAddCategoryBottomSheet)
+    }
+
+    @Test
+    fun `onEvent AddCategoryBottomSheetDismissed should set showAddCategoryBottomSheet to false`() {
+        // given
+        val expectedShowAddCategoryBottomSheet = false
+        initViewModel()
+
+        // when
+        val event = AddTimeBlockEvent.AddCategoryBottomSheetDismissed
+        viewModel.onEvent(event)
+        val state = viewModel.state
+
+        // then
+        assert(state.showAddCategoryBottomSheet == expectedShowAddCategoryBottomSheet)
     }
 
 }

@@ -1,7 +1,7 @@
 package com.example.deepwork.ui.model
 
 import com.example.deepwork.domain.model.Category
-import com.example.deepwork.domain.model.TimeBlock
+import com.example.deepwork.domain.model.ScheduledTimeBlock
 import kotlin.time.Duration
 
 data class TimeBlockUi(
@@ -14,26 +14,19 @@ data class TimeBlockUi(
 
     companion object {
 
-        fun fromDomain(timeBlock: TimeBlock): TimeBlockUi {
+        fun fromDomain(timeBlock: ScheduledTimeBlock): TimeBlockUi {
             return TimeBlockUi(
                 duration = timeBlock.duration,
-                categories = categoriesFor(timeBlock),
+                categories = timeBlock.categories,
                 type = typeFrom(timeBlock)
             )
         }
 
-        private fun categoriesFor(timeBlock: TimeBlock): List<Category> {
-            return when (timeBlock) {
-                is TimeBlock.WorkBlock -> timeBlock.categories
-                else -> emptyList()
-            }
-        }
-
-        private fun typeFrom(timeBlock: TimeBlock): Type {
-            return when (timeBlock) {
-                is TimeBlock.WorkBlock.DeepWorkBlock -> Type.DEEP_WORK
-                is TimeBlock.WorkBlock.ShallowWorkBlock -> Type.SHALLOW_WORK
-                is TimeBlock.BreakBlock -> Type.BREAK
+        private fun typeFrom(timeBlock: ScheduledTimeBlock): Type {
+            return when (timeBlock.type) {
+                ScheduledTimeBlock.BlockType.DEEP_WORK -> Type.DEEP_WORK
+                ScheduledTimeBlock.BlockType.SHALLOW_WORK -> Type.SHALLOW_WORK
+                ScheduledTimeBlock.BlockType.BREAK -> Type.BREAK
             }
         }
 

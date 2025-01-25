@@ -3,8 +3,8 @@ package com.example.deepwork.ui.session_management.create_session
 import androidx.lifecycle.SavedStateHandle
 import com.example.deepwork.domain.exception.SessionException
 import com.example.deepwork.domain.model.Result
-import com.example.deepwork.domain.model.Session
-import com.example.deepwork.domain.model.TimeBlock
+import com.example.deepwork.domain.model.ScheduledSession
+import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase
@@ -16,7 +16,6 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -46,10 +45,10 @@ class CreateSessionViewModelTest {
         addTimeBlock = AddTimeBlockUseCase()
         savedStateHandle = mockk()
         val initialState = CreateSessionUiState()
-        val initialSession = Session.create("")
+        val initialSession = ScheduledSession.create("", System.currentTimeMillis())
 
         every { savedStateHandle.get<CreateSessionUiState>("state") } returns initialState
-        every { savedStateHandle.get<Session>("session") } returns initialSession
+        every { savedStateHandle.get<ScheduledSession>("session") } returns initialSession
         every { savedStateHandle.set(any(), any<Any>()) } just runs
         Dispatchers.setMain(StandardTestDispatcher())
     }
@@ -139,7 +138,7 @@ class CreateSessionViewModelTest {
     @Test
     fun `onEvent() AddTimeBlock should add time block to time blocks`() = runTest {
         // given
-        val block = TimeBlock.deepWorkBlock()
+        val block = ScheduledTimeBlock.deepWorkBlock()
         val event = CreateSessionEvent.AddTimeBlock(block)
         val expectedBlock = TimeBlockUi.fromDomain(block)
         initViewModel(this)
@@ -156,7 +155,7 @@ class CreateSessionViewModelTest {
     @Test
     fun `onEvent() AddTimeBlock when adding a block results in an error, should set the error message`() = runTest {
         // given
-        val block = TimeBlock.breakBlock() // can't start with break block
+        val block = ScheduledTimeBlock.breakBlock() // can't start with break block
         val event = CreateSessionEvent.AddTimeBlock(block)
         initViewModel(this)
 

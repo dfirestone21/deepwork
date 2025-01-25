@@ -1,7 +1,10 @@
 package com.example.deepwork.domain.usecase.timeblock
 
+import com.example.deepwork.domain.business.TimeBlockValidator
 import com.example.deepwork.domain.exception.TimeBlockException
-import com.example.deepwork.domain.model.TimeBlock
+import com.example.deepwork.domain.model.template.TimeBlockTemplate
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -9,50 +12,37 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
 
 class CreateBreakBlockUseCaseTest {
-    private lateinit var createBreakBlock: CreateBreakBlockUseCase
+    private lateinit var createWorkBlock: CreateTimeBlockUseCase
+    private lateinit var timeBlockValidator: TimeBlockValidator
 
     @Before
     fun setup() {
-        createBreakBlock = CreateBreakBlockUseCase()
+        timeBlockValidator = mockk() {
+            every { validate(any<TimeBlockTemplate>()) } returns Unit
+        }
+        createWorkBlock = CreateTimeBlockUseCase(timeBlockValidator)
     }
 
     @Test
-    fun `when creating break block, should generate uuid`() = runTest {
+    fun `when creating work block, should generate uuid`() = runTest {
         // given
-        val block = TimeBlock.breakBlock()
+        val block = TimeBlockTemplate.deepWorkTemplate(25.minutes)
         // when
-        val createdBlock = createBreakBlock(block).getOrThrow()
+        val createdBlock = createWorkBlock(block).getOrThrow()
         // then
         assert(createdBlock.id != Uuid.NIL)
     }
 
-    @Test(expected = TimeBlockException.InvalidDurationTooShort::class)
-    fun `when duration is less than DURATION_MIN, should throw exception`() = runTest {
+    @Test
+    fun `when time block is invalid, should return error result`() = runTest {
         // given
-        val duration = TimeBlock.BreakBlock.DURATION_MIN - 5.minutes
-        val block = TimeBlock.breakBlock(duration)
-        // when
-        createBreakBlock(block).getOrThrow()
-    }
+        val block = TimeBlockTemplate.deepWorkTemplate(0.minutes, categories = emptyList())
+        every { timeBlockValidator.validate(any<TimeBlockTemplate>()) } throws TimeBlockException.InvalidDurationTooShort("20 minutes")
 
-    @Test(expected = TimeBlockException.InvalidDurationTooLong::class)
-    fun `when duration is more than DURATION_MAX, should throw exception`() = runTest {
-        // given
-        val duration = TimeBlock.BreakBlock.DURATION_MAX + 5.minutes
-        val block = TimeBlock.breakBlock(duration)
         // when
-        createBreakBlock(block).getOrThrow()
+        val result = createWorkBlock(block)
+
+        // then
+        assert(result.isError)
     }
 }
-
-/**
- * TODO:
- * Implement position handling in AddTimeBlockUseCase
- *     - if it's right after the same type (work block after work block, break after break)
- *     should put it after the next block of a different type, ie work block after break
- * Implement CreateSessionUseCase to handle validation of session fields
- * Think about how to handle editing, deleting and moving time blocks in a session
- *   RemoveTimeBlockUseCase
- *   - would have to handle the resulting adjacent breaks (merge them or delete one?)
- *      - probably merge and add their time (until max duration)
- */
