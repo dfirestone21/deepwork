@@ -4,13 +4,26 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.deepwork.data.database.room.model.CategoryEntity
-import com.example.deepwork.data.database.room.model.TimeBlockEntity
+import com.example.deepwork.data.database.room.model.category.CategoryEntity
+import com.example.deepwork.data.database.room.model.category.CategoryWithScheduledTimeBlocksEntity
+import com.example.deepwork.data.database.room.model.scheduled_session.ScheduledSessionEntity
+import com.example.deepwork.data.database.room.model.scheduled_session.ScheduledSessionWithTimeBlocksEntity
+import com.example.deepwork.data.database.room.model.scheduled_session.ScheduledTimeBlockCategoryCrossRef
+import com.example.deepwork.data.database.room.model.scheduled_session.ScheduledTimeBlockEntity
+import com.example.deepwork.data.database.room.model.session_template.SessionTemplateEntity
+import com.example.deepwork.data.database.room.model.session_template.SessionTemplateWithBlocks
+import com.example.deepwork.data.database.room.model.session_template.TimeBlockTemplateCategoryCrossRef
+import com.example.deepwork.data.database.room.model.session_template.TimeBlockTemplateEntity
 
 @Database(
     entities = [
-        TimeBlockEntity::class,
-        CategoryEntity::class
+        SessionTemplateEntity::class,
+        TimeBlockTemplateEntity::class,
+        TimeBlockTemplateCategoryCrossRef::class,
+        ScheduledSessionEntity::class,
+        ScheduledTimeBlockEntity::class,
+        ScheduledTimeBlockCategoryCrossRef::class,
+        CategoryEntity::class,
     ], version = AppDatabase.VERSION
 )
 abstract class AppDatabase : RoomDatabase() {

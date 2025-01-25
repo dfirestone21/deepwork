@@ -1,4 +1,4 @@
-package com.example.deepwork.data.database.room.model.template
+package com.example.deepwork.data.database.room.model.session_template
 
 import androidx.room.Embedded
 import androidx.room.Relation

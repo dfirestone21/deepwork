@@ -1,4 +1,4 @@
-package com.example.deepwork.data.database.room.model
+package com.example.deepwork.data.database.room.model.category
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
