@@ -70,35 +70,11 @@ cd deep-work-app
 [development server command]
 ```
 
-## Project Structure
-
-```
-deep-work-app/
-├── src/
-│   ├── domain/          # Domain models and business logic
-│   ├── data/           # Data access and repository implementations
-│   ├── presentation/   # UI components and view models
-│   └── utils/          # Utility classes and helper functions
-├── test/               # Test suites
-├── docs/              # Documentation
-└── [other project-specific directories]
-```
-
-## Technical Details
-
-### Database Schema
-The application uses a relational database with the following core entities:
-- Session templates
-- Time blocks
-- Categories
-- Session results
-- Analytics data
-
 ### Core Technologies
-- [List main technologies/frameworks used]
-- [Database technology]
-- [UI framework]
-- [Other significant technologies]
+- Kotlin with Flows and Coroutines
+- Room Database
+- Jetpack Compose
+- Hilt
 
 ## Development
 
@@ -134,7 +110,6 @@ This project follows [specific code style guidelines]. Please ensure your contri
 - Advanced analytics
 - Calendar integration
 - Backup systems
-- Machine learning insights
 
 ### Non-Features
 The following features are explicitly excluded from the initial scope:
