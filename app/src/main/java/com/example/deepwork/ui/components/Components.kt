@@ -26,9 +26,11 @@ fun TextField(
     placeholder: String,
     isError: Boolean = false,
     supportingText: String? = null,
+    label: String = "",
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     modifier: Modifier = Modifier
 ) {
+    val labelComposable: @Composable() (() -> Unit)? = if (label.isNotBlank()) { { Text(label) } } else null
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -44,7 +46,8 @@ fun TextField(
                     color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                 )
             }
-        }
+        },
+        label = labelComposable
     )
 }
 

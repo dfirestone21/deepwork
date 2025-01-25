@@ -30,6 +30,7 @@ class GetCategoriesUseCaseTest {
     fun `invoke() should return list of categories`() = runTest {
         // given
         val expectedCategories = testCategories()
+        coEvery { categoryRepository.getAll() } returns flowOf(expectedCategories)
 
         // when
         val result = getCategories().first()

@@ -1,5 +1,7 @@
 package com.example.deepwork.di
 
+import com.example.deepwork.domain.business.CategoryValidator
+import com.example.deepwork.domain.business.CategoryValidatorImpl
 import com.example.deepwork.domain.business.TimeBlockValidator
 import com.example.deepwork.domain.business.TimeBlockValidatorImpl
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
@@ -14,4 +16,7 @@ interface UseCaseModule {
 
     @Binds
     fun bindTimeBlockValidator(validator: TimeBlockValidatorImpl): TimeBlockValidator
+
+    @Binds
+    fun bindCategoryValidator(validator: CategoryValidatorImpl): CategoryValidator
 }

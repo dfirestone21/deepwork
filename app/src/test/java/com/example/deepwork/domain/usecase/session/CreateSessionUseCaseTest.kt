@@ -1,8 +1,8 @@
 package com.example.deepwork.domain.usecase.session
 
 import com.example.deepwork.domain.model.Result
-import com.example.deepwork.domain.model.Session
-import com.example.deepwork.domain.model.TimeBlock
+import com.example.deepwork.domain.model.ScheduledSession
+import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase
 import io.mockk.every
 import io.mockk.mockk
@@ -32,18 +32,16 @@ class CreateSessionUseCaseTest {
         assert(actualSession.id != Uuid.NIL)
     }
 
-    private fun createDefaultSession(): Session {
+    private fun createDefaultSession(): ScheduledSession {
         val timeBlocks = listOf(
-            TimeBlock.deepWorkBlock(),
-            TimeBlock.breakBlock()
+            ScheduledTimeBlock.deepWorkBlock(),
+            ScheduledTimeBlock.breakBlock()
         )
-        return Session(
-            id = Uuid.NIL,
-            name = "Default Session",
-            description = null,
-            timeBlocks = timeBlocks,
-            createdAt = 0,
-            updatedAt = 0
+        return ScheduledSession.create(
+            "Test Session",
+            System.currentTimeMillis()
+        ).copy(
+            timeBlocks = timeBlocks
         )
     }
 
