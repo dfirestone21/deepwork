@@ -97,4 +97,15 @@ sealed class Result<out T> {
             is Error -> null
         }
     }
+
+    /**
+     * Gets the exception of this Result if it is an Error, otherwise returns null.
+     * @return The exception of this Result if it is an Error, otherwise null.
+     */
+    fun exceptionOrNull(): Throwable? {
+        return when (this) {
+            is Success -> null
+            is Error -> exception
+        }
+    }
 }

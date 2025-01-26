@@ -25,7 +25,7 @@ data class Category(
                 id = Uuid.random(),
                 name = name,
                 colorHex = colorHex,
-                createdAt = System.currentTimeMillis(),
+                createdAt = 0,
                 updatedAt = 0
             )
         }

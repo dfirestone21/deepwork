@@ -1,9 +1,9 @@
-package com.example.deepwork.domain.repository
+package com.example.deepwork.data.database.db
 
 import com.example.deepwork.domain.model.Category
 import kotlinx.coroutines.flow.Flow
 
-interface CategoryRepository {
+interface CategoryDb {
 
     fun getAll(): Flow<List<Category>>
 

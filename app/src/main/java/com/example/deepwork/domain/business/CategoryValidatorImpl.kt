@@ -8,7 +8,6 @@ class CategoryValidatorImpl @Inject constructor() : CategoryValidator {
 
     override fun validate(category: Category) {
         validateName(category.name)
-        validateColor(category.colorHex)
     }
 
     override fun validateName(name: String) {
@@ -18,9 +17,5 @@ class CategoryValidatorImpl @Inject constructor() : CategoryValidator {
         if (name.length > CategoryValidator.NAME_MAX_LENGTH) {
             throw CategoryException.InvalidNameException("Name can't be longer than ${CategoryValidator.NAME_MAX_LENGTH} characters")
         }
-    }
-
-    override fun validateColor(colorHex: Int) {
-        TODO("Not yet implemented")
     }
 }

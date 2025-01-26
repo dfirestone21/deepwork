@@ -11,6 +11,4 @@ interface CategoryValidator {
     fun validate(category: Category)
 
     fun validateName(name: String)
-
-    fun validateColor(colorHex: Int)
 }

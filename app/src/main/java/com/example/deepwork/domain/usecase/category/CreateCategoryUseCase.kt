@@ -7,10 +7,16 @@ import com.example.deepwork.domain.repository.CategoryRepository
 import javax.inject.Inject
 
 class CreateCategoryUseCase @Inject constructor(
-    repository: CategoryRepository,
-    validator: CategoryValidator
+    private val repository: CategoryRepository,
+    private val validator: CategoryValidator
 ) {
-    operator fun invoke(category: Category): Result<Category> {
-        return Result.Success(category)
+    suspend operator fun invoke(category: Category): Result<Category> {
+        return try {
+            validator.validate(category)
+            val insertedCategory = repository.upsert(category)
+            Result.Success(insertedCategory)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
     }
 }
