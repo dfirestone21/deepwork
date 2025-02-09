@@ -1,28 +1,29 @@
 package com.example.deepwork.data.repository
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import com.example.deepwork.data.database.db.CategoryDb
 import com.example.deepwork.domain.model.Category
 import com.example.deepwork.domain.repository.CategoryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 
-class CategoryRepositoryImpl @Inject constructor() : CategoryRepository {
+class CategoryRepositoryImpl @Inject constructor(
+    private val db: CategoryDb
+) : CategoryRepository {
 
     override fun getAll(): Flow<List<Category>> {
-        TODO()
+        return db.getAll()
     }
 
     override fun getById(id: String): Flow<Category?> {
-        return flowOf(null)
+        return db.getById(id)
     }
 
     override suspend fun upsert(category: Category): Category {
-        return category
+        return db.upsert(category)
     }
 
     override suspend fun delete(category: Category) {
-        // no-op
+        return db.delete(category)
     }
 }

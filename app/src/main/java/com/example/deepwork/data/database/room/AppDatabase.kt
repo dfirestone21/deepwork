@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.deepwork.data.database.room.dao.CategoryDao
 import com.example.deepwork.data.database.room.model.category.CategoryEntity
 import com.example.deepwork.data.database.room.model.category.CategoryWithScheduledTimeBlocksEntity
 import com.example.deepwork.data.database.room.model.scheduled_session.ScheduledSessionEntity
@@ -45,4 +46,6 @@ abstract class AppDatabase : RoomDatabase() {
             return instance!!
         }
     }
+
+    abstract fun categoryDao(): CategoryDao
 }

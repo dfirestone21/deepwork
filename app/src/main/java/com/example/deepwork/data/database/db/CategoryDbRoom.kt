@@ -1,11 +1,12 @@
 package com.example.deepwork.data.database.db
 
-import android.util.Log
 import com.example.deepwork.data.database.room.dao.CategoryDao
 import com.example.deepwork.data.database.room.model.category.CategoryEntity
 import com.example.deepwork.domain.exception.DatabaseException
 import com.example.deepwork.domain.model.Category
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import java.util.Calendar
 import javax.inject.Inject
@@ -14,10 +15,14 @@ class CategoryDbRoom @Inject constructor(
     private val categoryDao: CategoryDao
 ) : CategoryDb {
 
-    private val TAG = "CategoryDbRoom"
-
     override fun getAll(): Flow<List<Category>> {
-        TODO("Not yet implemented")
+        return categoryDao.getAll()
+            .map { categoryEntities ->
+                categoryEntities.map { it.toDomain() }
+            }.catch { e ->
+                Timber.d("get all categories failed: ${e.message}")
+                throw DatabaseException("Error fetching categories: ${e.message}")
+            }
     }
 
     override fun getById(id: String): Flow<Category?> {
@@ -28,13 +33,13 @@ class CategoryDbRoom @Inject constructor(
         val preparedCategory = prepareCategoryForSave(category)
         val entity = CategoryEntity.toEntity(preparedCategory)
 
-        val upsertedCategory = try {
+        try {
             categoryDao.upsert(entity)
         } catch (e: Exception) {
             Timber.d("upsert category failed: ${e.message}")
             throw DatabaseException("Error saving category: ${e.message}")
         }
-        return upsertedCategory.toDomain()
+        return preparedCategory
     }
 
     private fun prepareCategoryForSave(category: Category): Category {
