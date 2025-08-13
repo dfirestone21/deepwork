@@ -4,15 +4,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.example.deepwork.domain.business.CategoryValidator
 import com.example.deepwork.domain.exception.CategoryException
+import com.example.deepwork.domain.exception.DatabaseException
+import com.example.deepwork.domain.model.Result
 import com.example.deepwork.domain.repository.CategoryRepository
+import com.example.deepwork.domain.usecase.category.CreateCategoryUseCase
+import com.example.deepwork.ui.util.UiEvent
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -21,34 +28,29 @@ import kotlinx.coroutines.test.setMain
 import net.bytebuddy.matcher.ElementMatchers.returns
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddCategoryViewModelTest {
     private lateinit var viewModel: AddCategoryViewModel
-    private lateinit var categoryRepository: CategoryRepository
+    private lateinit var createCategory: CreateCategoryUseCase
     private lateinit var categoryValidator: CategoryValidator
     private lateinit var testScope: TestScope
 
     @Before
     fun setup() {
         Dispatchers.setMain(StandardTestDispatcher())
-        categoryRepository = mockk() {
-            coEvery { upsert(any()) } answers { firstArg() }
-        }
+        createCategory = mockk()
+        coEvery { createCategory(any()) } answers { Result.Success(firstArg()) }
         categoryValidator = mockk() {
             every { validateName(any()) } just Runs
             every { validate(any()) } just Runs
         }
     }
-
-    private fun initViewModel() {
-        viewModel = AddCategoryViewModel(categoryRepository, categoryValidator)
-    }
-
     private fun initViewModel(testScope: TestScope, advanceUntilIdle: Boolean = true) {
-        initViewModel()
+        viewModel = AddCategoryViewModel(createCategory, categoryValidator)
         this.testScope = testScope
         if (advanceUntilIdle) {
             testScope.advanceUntilIdle()
@@ -58,7 +60,7 @@ class AddCategoryViewModelTest {
     @Test
     fun `onEvent NameUpdated when name is valid, should update name`() = runTest {
         // given
-        initViewModel()
+        initViewModel(this)
         val expectedName = "Category 1"
 
         // when
@@ -74,7 +76,7 @@ class AddCategoryViewModelTest {
     @Test
     fun `onEvent NameUpdated when name is valid, should set error to false`() = runTest {
         // given
-        initViewModel()
+        initViewModel(this)
         val name = "Category 1"
 
         // when
@@ -92,7 +94,7 @@ class AddCategoryViewModelTest {
         // given
         val expectedName = "   "
         every { categoryValidator.validateName(any()) } throws CategoryException.InvalidNameException("Wrong name!!")
-        initViewModel()
+        initViewModel(this)
 
         // when
         val event = AddCategoryEvent.NameUpdated(expectedName)
@@ -110,7 +112,7 @@ class AddCategoryViewModelTest {
         val expectedName = "   "
         val expectedErrorMessage = "Wrong name!!"
         every { categoryValidator.validateName(any()) } throws CategoryException.InvalidNameException(expectedErrorMessage)
-        initViewModel()
+        initViewModel(this)
 
         // when
         val event = AddCategoryEvent.NameUpdated(expectedName)
@@ -128,7 +130,7 @@ class AddCategoryViewModelTest {
         // given
         val expectedName = "   "
         every { categoryValidator.validateName(any()) } throws CategoryException.InvalidNameException("Wrong name!!")
-        initViewModel()
+        initViewModel(this)
 
         // when
         val event = AddCategoryEvent.NameUpdated(expectedName)
@@ -142,7 +144,7 @@ class AddCategoryViewModelTest {
     @Test
     fun `onEvent NameUpdated when name is valid, should recalculate state isValid`() = runTest {
         // given
-        initViewModel()
+        initViewModel(this)
         val invalidName = "   "
         val name = "Category 1"
         every { categoryValidator.validateName(invalidName) } throws CategoryException.InvalidNameException("Wrong name!!") andThen Unit
@@ -169,7 +171,7 @@ class AddCategoryViewModelTest {
     fun `onEvent ColorSelected should update the selectedColor`() = runTest {
         // given
         val expectedColor = Color.Red.toArgb()
-        initViewModel()
+        initViewModel(this)
 
         // when
         val event = AddCategoryEvent.ColorSelected(expectedColor)
@@ -185,7 +187,7 @@ class AddCategoryViewModelTest {
     fun `onEvent ColorSelected should recalculate state isValid`() = runTest {
         // given
         val color = Color.Red.toArgb()
-        initViewModel()
+        initViewModel(this)
 
         // when
         // set valid name
@@ -200,5 +202,99 @@ class AddCategoryViewModelTest {
 
         // then
         assert(state.isValid)
+    }
+
+    @Test
+    fun `onEvent SaveClicked when isValid, should save category`() = runTest {
+        // given
+        initViewModel(this)
+
+        val nameEvent = AddCategoryEvent.NameUpdated("Category 1")
+        viewModel.onEvent(nameEvent)
+        advanceUntilIdle()
+        val colorEvent = AddCategoryEvent.ColorSelected(Color.Red.toArgb())
+        viewModel.onEvent(colorEvent)
+        advanceUntilIdle()
+
+        // when
+        val saveEvent = AddCategoryEvent.SaveClicked
+        viewModel.onEvent(saveEvent)
+        advanceUntilIdle()
+
+        // then
+        coVerify { createCategory(any()) }
+    }
+
+    @Test
+    fun `onEvent SaveClicked when isValid, should send NavigateUp event`() = runTest {
+        // given
+        initViewModel(this)
+        val nameEvent = AddCategoryEvent.NameUpdated("Category 1")
+        viewModel.onEvent(nameEvent)
+        advanceUntilIdle()
+        val colorEvent = AddCategoryEvent.ColorSelected(Color.Red.toArgb())
+        viewModel.onEvent(colorEvent)
+        advanceUntilIdle()
+
+        // when
+        val uiEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(uiEvents) }
+        val saveEvent = AddCategoryEvent.SaveClicked
+        viewModel.onEvent(saveEvent)
+        advanceUntilIdle()
+
+        // given
+        val navigateUpEvent = uiEvents.find { it is UiEvent.NavigateUp }
+        assertNotNull(navigateUpEvent)
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent SaveClicked when error saving category, should show error snackbar`() = runTest {
+        // given
+        coEvery { createCategory(any()) } returns Result.Error(DatabaseException("Error saving category"))
+        initViewModel(this)
+        val nameEvent = AddCategoryEvent.NameUpdated("Category 1")
+        viewModel.onEvent(nameEvent)
+        advanceUntilIdle()
+        val colorEvent = AddCategoryEvent.ColorSelected(Color.Red.toArgb())
+        viewModel.onEvent(colorEvent)
+        advanceUntilIdle()
+
+        // when
+        val uiEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(uiEvents) }
+        val saveEvent = AddCategoryEvent.SaveClicked
+        viewModel.onEvent(saveEvent)
+        advanceUntilIdle()
+
+        // then
+        val snackBarEvent = uiEvents.find { it is UiEvent.ShowSnackbar }
+        assertNotNull(snackBarEvent)
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent SaveClicked when form is not valid, should show error snackbar`() = runTest {
+        // given
+        coEvery { createCategory(any()) } returns Result.Error(DatabaseException("Error saving category"))
+        initViewModel(this)
+        // name has not been set
+        advanceUntilIdle()
+        val colorEvent = AddCategoryEvent.ColorSelected(Color.Red.toArgb())
+        viewModel.onEvent(colorEvent)
+        advanceUntilIdle()
+
+        // when
+        val uiEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(uiEvents) }
+        val saveEvent = AddCategoryEvent.SaveClicked
+        viewModel.onEvent(saveEvent)
+        advanceUntilIdle()
+
+        // then
+        val snackBarEvent = uiEvents.find { it is UiEvent.ShowSnackbar }
+        assertNotNull(snackBarEvent)
+        job.cancel()
     }
 }
