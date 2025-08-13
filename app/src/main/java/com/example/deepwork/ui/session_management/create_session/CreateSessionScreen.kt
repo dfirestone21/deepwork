@@ -43,6 +43,7 @@ import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.ui.components.TextField
 import com.example.deepwork.ui.model.InputField
 import com.example.deepwork.ui.model.TimeBlockUi
+import com.example.deepwork.ui.util.ObserveAsEvents
 import com.example.deepwork.ui.util.UiEvent
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.DurationUnit
@@ -57,13 +58,11 @@ fun CreateSessionScreen(
 ) {
     val uiState = viewModel.state
 
-    LaunchedEffect(key1 = true) {
-        viewModel.uiEvent.collect { event ->
-            when (event) {
-                is UiEvent.Navigate -> onNavigate(event)
-                is UiEvent.NavigateUp -> onNavigateUp()
-                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
-            }
+    ObserveAsEvents(viewModel.uiEvent) { event ->
+        when (event) {
+            is UiEvent.Navigate -> onNavigate(event)
+            is UiEvent.NavigateUp -> onNavigateUp()
+            is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
         }
     }
 

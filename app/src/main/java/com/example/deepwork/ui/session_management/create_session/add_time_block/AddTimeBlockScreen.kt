@@ -34,6 +34,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -56,6 +57,7 @@ import com.example.deepwork.ui.components.SecondaryButton
 import com.example.deepwork.ui.components.TextField
 import com.example.deepwork.ui.model.InputField
 import com.example.deepwork.ui.session_management.create_session.add_time_block.add_category.AddCategoryBottomSheet
+import com.example.deepwork.ui.util.ObserveAsEvents
 import com.example.deepwork.ui.util.UiEvent
 
 @Composable
@@ -65,13 +67,11 @@ fun AddTimeBlockScreen(
     onNavigate: (UiEvent.Navigate) -> Unit,
     onNavigateUp: () -> Unit
 ) {
-    LaunchedEffect(true) {
-        viewModel.uiEvent.collect {
-            when (it) {
-                is UiEvent.Navigate -> onNavigate(it)
-                is UiEvent.NavigateUp -> onNavigateUp()
-                is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(it.message)
-            }
+    ObserveAsEvents(viewModel.uiEvent) { event ->
+        when (event) {
+            is UiEvent.Navigate -> onNavigate(event)
+            is UiEvent.NavigateUp -> onNavigateUp()
+            is UiEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
         }
     }
     AddTimeBlockContent(
