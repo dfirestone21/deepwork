@@ -7,15 +7,18 @@ import com.example.deepwork.domain.exception.TimeBlockException
 import com.example.deepwork.domain.model.Category
 import com.example.deepwork.domain.model.Result
 import com.example.deepwork.domain.model.ScheduledTimeBlock
+import com.example.deepwork.domain.model.template.TimeBlockTemplate
 import com.example.deepwork.domain.usecase.timeblock.CreateTimeBlockUseCase
 import com.example.deepwork.domain.usecase.timeblock.category.GetCategoriesUseCase
 import com.example.deepwork.ui.util.UiEvent
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -31,6 +34,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AddTimeBlockViewModelTest {
     private lateinit var viewModel: AddTimeBlockViewModel
     private lateinit var createTimeBlock: CreateTimeBlockUseCase
@@ -53,6 +57,7 @@ class AddTimeBlockViewModelTest {
         timeBlockValidator = mockk() {
             every { validateDuration(any(), any()) } just Runs
             every { validateCategories(any(), any()) } just Runs
+            every { validate(any<TimeBlockTemplate>()) } just Runs
         }
         getCategories = mockk()
         coEvery { getCategories() } returns flowOf(Result.Success(testCategories))
@@ -277,6 +282,49 @@ class AddTimeBlockViewModelTest {
         // then
         assert(initialDuration != actualDuration)
         assertEquals(expectedDuration, actualDuration)
+    }
+
+    @Test
+    fun `onEvent DurationChanged should revalidate timeBlock`() = runTest {
+        // given
+        initViewModel()
+
+        // when
+        val event = AddTimeBlockEvent.DurationChanged("30")
+        viewModel.onEvent(event)
+
+        // then
+        coVerify { timeBlockValidator.validate(any<TimeBlockTemplate>()) }
+    }
+
+    @Test
+    fun `onEvent DurationChanged when timeBlock is valid, isValid should be true`() = runTest {
+        // given
+        coEvery { timeBlockValidator.validate(any<TimeBlockTemplate>()) } just Runs
+        initViewModel()
+
+        // when
+        val event = AddTimeBlockEvent.DurationChanged("30")
+        viewModel.onEvent(event)
+        val actualIsValid = viewModel.state.isValid
+
+        // then
+        assert(actualIsValid)
+    }
+
+    @Test
+    fun `onEvent DurationChanged when timeBlock is not valid, isValid should not be true`() = runTest {
+        // given
+        coEvery { timeBlockValidator.validate(any<TimeBlockTemplate>()) } throws TimeBlockException.InvalidDurationTooShort("10")
+        initViewModel()
+
+        // when
+        val event = AddTimeBlockEvent.DurationChanged("5")
+        viewModel.onEvent(event)
+        val actualIsValid = viewModel.state.isValid
+
+        // then
+        assertFalse(actualIsValid)
     }
 
     @Test
@@ -525,6 +573,52 @@ class AddTimeBlockViewModelTest {
     }
 
     @Test
+    fun `onEvent CategorySelected should revalidate timeblock`() = runTest {
+        // given
+        val category = testCategories.first()
+        initViewModel(this)
+
+        // when
+        val event = AddTimeBlockEvent.CategorySelected(category)
+        viewModel.onEvent(event)
+
+        // then
+        coVerify { timeBlockValidator.validate(any<TimeBlockTemplate>()) }
+    }
+
+    @Test
+    fun `onEvent CategorySelected when timeblock is valid, isValid should be true`() = runTest {
+        // given
+        coEvery { timeBlockValidator.validate(any<TimeBlockTemplate>()) } just Runs
+        val category = testCategories.first()
+        initViewModel(this)
+
+        // when
+        val event = AddTimeBlockEvent.CategorySelected(category)
+        viewModel.onEvent(event)
+        val actualIsValid = viewModel.state.isValid
+
+        // then
+        assert(actualIsValid)
+    }
+
+    @Test
+    fun `onEvent CategorySelected when timeBlockValidator throws TimeBlockException, isValid should be false`() = runTest {
+        // given
+        coEvery { timeBlockValidator.validate(any<TimeBlockTemplate>()) } throws TimeBlockException.InvalidCategoriesCount()
+        val category = testCategories.first()
+        initViewModel(this)
+
+        // when
+        val event = AddTimeBlockEvent.CategorySelected(category)
+        viewModel.onEvent(event)
+        val actualIsValid = viewModel.state.isValid
+
+        // then
+        assertFalse(actualIsValid)
+    }
+
+    @Test
     fun `onEvent CreateCategoryClicked should set showAddCategoryBottomSheet to true`() {
         // given
         val expectedShowAddCategoryBottomSheet = true
@@ -552,6 +646,160 @@ class AddTimeBlockViewModelTest {
 
         // then
         assert(state.showAddCategoryBottomSheet == expectedShowAddCategoryBottomSheet)
+    }
+
+    @Test
+    fun `onEvent CategoryUnselected should set isSelected to false on Category`() = runTest {
+        // given
+        val selectedCategory = testCategories.first()
+        initViewModel(this)
+
+        // when
+        // select the category first
+        val selectedEvent = AddTimeBlockEvent.CategorySelected(selectedCategory)
+        viewModel.onEvent(selectedEvent)
+        advanceUntilIdle()
+        // then unselect it
+        val unselectedEvent = AddTimeBlockEvent.CategoryUnselected(selectedCategory)
+        viewModel.onEvent(unselectedEvent)
+
+
+        // then
+        val actualState = viewModel.state
+        val actualCategory = actualState.categories.first { it.category.id == selectedCategory.id }
+        assertFalse(actualCategory.isSelected)
+    }
+
+    @Test
+    fun `onEvent CategoryUnselected should decrement selectedCategoriesCount`() = runTest {
+        // given
+        val selectedCategory = testCategories.first()
+        initViewModel(this)
+
+        // when
+        // select the category first
+        val selectedEvent = AddTimeBlockEvent.CategorySelected(selectedCategory)
+        viewModel.onEvent(selectedEvent)
+        advanceUntilIdle()
+        val selectedCategoriesCountBefore = viewModel.state.selectedCategoriesCount
+        val expectedCategoriesCount = selectedCategoriesCountBefore - 1
+        // then unselect it
+        val unselectedEvent = AddTimeBlockEvent.CategoryUnselected(selectedCategory)
+        viewModel.onEvent(unselectedEvent)
+        val selectedCategoriesCountAfter = viewModel.state.selectedCategoriesCount
+
+        // then
+        assertEquals(expectedCategoriesCount, selectedCategoriesCountAfter)
+    }
+
+    @Test
+    fun `onEvent CategoryUnselected should re-validate timeBlock`() = runTest {
+        // given
+        val selectedCategory = testCategories.first()
+        initViewModel(this)
+
+        // when
+        // select the category first
+        val selectedEvent = AddTimeBlockEvent.CategorySelected(selectedCategory)
+        viewModel.onEvent(selectedEvent)
+        advanceUntilIdle()
+        // then unselect it
+        val unselectedEvent = AddTimeBlockEvent.CategoryUnselected(selectedCategory)
+        viewModel.onEvent(unselectedEvent)
+
+        // then
+        // twice because validated when selected
+        coVerify(exactly = 2) { timeBlockValidator.validate(any<TimeBlockTemplate>()) }
+    }
+
+    @Test
+    fun `onEvent CategoryUnselected when timeBlockValidator throws TimeBlockException, isValid should be false`() = runTest {
+        // given
+        coEvery { timeBlockValidator.validate(any<TimeBlockTemplate>()) } throws TimeBlockException.InvalidCategoriesCount()
+        val selectedCategory = testCategories.first()
+        initViewModel(this)
+
+        // when
+        // select the category first
+        val selectedEvent = AddTimeBlockEvent.CategorySelected(selectedCategory)
+        viewModel.onEvent(selectedEvent)
+        advanceUntilIdle()
+        // then unselect it
+        val unselectedEvent = AddTimeBlockEvent.CategoryUnselected(selectedCategory)
+        viewModel.onEvent(unselectedEvent)
+        val actualIsValid = viewModel.state.isValid
+
+        // then
+        assertFalse(actualIsValid)
+    }
+
+    @Test
+    fun `onEvent CategoryUnselected when validating categories fails, should show error message`() = runTest {
+        // given
+        every { timeBlockValidator.validateCategories(any(), any()) } throws IllegalStateException()
+        val selectedCategory = testCategories.first()
+        initViewModel(this)
+
+        // when
+        // select the category first
+        val selectedEvent = AddTimeBlockEvent.CategorySelected(selectedCategory)
+        viewModel.onEvent(selectedEvent)
+        advanceUntilIdle()
+        // then unselect it
+        val actualEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(actualEvents) }
+        val unselectedEvent = AddTimeBlockEvent.CategoryUnselected(selectedCategory)
+        viewModel.onEvent(unselectedEvent)
+        advanceUntilIdle()
+        val actualEvent = actualEvents.firstOrNull()
+
+        // then
+        assert(actualEvent is UiEvent.ShowSnackbar)
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent CategoryUnselected when timeBlock is valid, isValid should be true`() = runTest {
+        // given
+        val selectedCategory = testCategories.first()
+        initViewModel(this)
+
+        // when
+        // select the category first
+        val selectedEvent = AddTimeBlockEvent.CategorySelected(selectedCategory)
+        viewModel.onEvent(selectedEvent)
+        advanceUntilIdle()
+        // then unselect it
+        val unselectedEvent = AddTimeBlockEvent.CategoryUnselected(selectedCategory)
+        viewModel.onEvent(unselectedEvent)
+        val actualIsValid = viewModel.state.isValid
+
+        // then
+        assert(actualIsValid)
+    }
+
+    @Test
+    fun `onEvent CategoryUnselected if category was already unselected, category should remain unselected`() = runTest {
+        // given
+        val selectedCategory = testCategories.first()
+        initViewModel(this)
+
+        // when
+        // select the category first
+        val selectedEvent = AddTimeBlockEvent.CategorySelected(selectedCategory)
+        viewModel.onEvent(selectedEvent)
+        advanceUntilIdle()
+        // then unselect it
+        val unselectedEvent = AddTimeBlockEvent.CategoryUnselected(selectedCategory)
+        viewModel.onEvent(unselectedEvent)
+        advanceUntilIdle()
+        // then unselect it again
+        viewModel.onEvent(unselectedEvent)
+        val actualCategories = viewModel.state.categories
+        val actualCategory = actualCategories.first { it.category.id == selectedCategory.id }
+
+        // then
+        assertFalse(actualCategory.isSelected)
     }
 
 }

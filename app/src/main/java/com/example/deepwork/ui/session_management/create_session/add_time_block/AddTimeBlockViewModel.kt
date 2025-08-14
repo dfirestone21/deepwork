@@ -6,9 +6,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deepwork.domain.business.TimeBlockValidator
+import com.example.deepwork.domain.exception.TimeBlockException
 import com.example.deepwork.domain.model.Category
 import com.example.deepwork.domain.model.Result
 import com.example.deepwork.domain.model.ScheduledTimeBlock
+import com.example.deepwork.domain.model.template.TimeBlockTemplate
 import com.example.deepwork.domain.usecase.timeblock.CreateTimeBlockUseCase
 import com.example.deepwork.domain.usecase.timeblock.category.GetCategoriesUseCase
 import com.example.deepwork.ui.model.InputField
@@ -18,7 +20,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 @HiltViewModel
 class AddTimeBlockViewModel @Inject constructor(
@@ -36,6 +40,10 @@ class AddTimeBlockViewModel @Inject constructor(
 
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
+    private val selectedCategories: List<Category>
+        get() = state.categories
+            .filter { it.isSelected }
+            .map { it.category }
 
     init {
         initState()
@@ -67,7 +75,7 @@ class AddTimeBlockViewModel @Inject constructor(
             is AddTimeBlockEvent.NavigateUp -> sendNavigateUpEvent()
             is AddTimeBlockEvent.SaveClicked -> TODO()
             is AddTimeBlockEvent.CategorySelected -> onCategorySelected(event.category)
-            is AddTimeBlockEvent.CategoryUnselected -> TODO()
+            is AddTimeBlockEvent.CategoryUnselected -> onCategoryUnselected(event.category)
             is AddTimeBlockEvent.CreateCategoryClicked -> showAddCategoryBottomSheet()
             is AddTimeBlockEvent.AddCategoryBottomSheetDismissed -> hideAddCategoryBottomSheet()
         }
@@ -106,6 +114,7 @@ class AddTimeBlockViewModel @Inject constructor(
                 isError = durationError != null
             )
         )
+        validateTimeBlock(duration, selectedCategories)
     }
 
     private fun updateDurationError(errorMessage: String) {
@@ -135,9 +144,23 @@ class AddTimeBlockViewModel @Inject constructor(
     }
 
     private fun onCategorySelected(category: Category) {
+        updateCategoriesWithSelection(
+            id = category.id,
+            isSelected = true
+        )
+    }
+
+    private fun onCategoryUnselected(category: Category) {
+        updateCategoriesWithSelection(
+            id = category.id,
+            isSelected = false
+        )
+    }
+
+    private fun updateCategoriesWithSelection(id: Uuid, isSelected: Boolean) {
         val updatedSelectableCategories = state.categories.map {
-            if (it.category == category) {
-                it.copy(isSelected = true)
+            if (it.category.id == id) {
+                it.copy(isSelected = isSelected)
             } else {
                 it
             }
@@ -146,9 +169,48 @@ class AddTimeBlockViewModel @Inject constructor(
             .filter { it.isSelected }
             .map { it.category }
 
-        runCatching { timeBlockValidator.validateCategories(state.selectedBlockType, selectedCategories) }
-            .onSuccess { state = state.copy(categories = updatedSelectableCategories) }
-            .onFailure { exception -> showSnackbar(exception.message ?: "Failed to validate categories") }
+        val shouldValidateCategories = isSelected
+        if (shouldValidateCategories) {
+            runCatching { timeBlockValidator.validateCategories(state.selectedBlockType, selectedCategories) }
+                .onFailure { exception ->
+                    showSnackbar(exception.message ?: "Failed to validate categories")
+                    return
+                }
+        }
+        state = state.copy(categories = updatedSelectableCategories)
+
+        val duration = state.duration.value.toIntOrNull()?.minutes ?: Duration.ZERO
+        validateTimeBlock(duration, selectedCategories)
+    }
+
+    private fun validateTimeBlock(duration: Duration, selectedCategories: List<Category>) {
+        val blockType = state.selectedBlockType
+        val timeBlock = when (blockType) {
+            ScheduledTimeBlock.BlockType.DEEP_WORK -> TimeBlockTemplate.deepWorkTemplate(
+                duration = duration,
+                categories = selectedCategories
+            )
+            ScheduledTimeBlock.BlockType.SHALLOW_WORK -> TimeBlockTemplate.shallowWorkTemplate(
+                duration = duration,
+                categories = selectedCategories
+            )
+            ScheduledTimeBlock.BlockType.BREAK -> TimeBlockTemplate.breakTemplate(
+                duration = duration
+            )
+        }
+        runCatching {
+            timeBlockValidator.validate(timeBlock)
+        }.onSuccess {
+            state = state.copy(isValid = true)
+        }
+         .onFailure { exception ->
+             if (exception !is TimeBlockException) {
+                 val errorMessage = exception.message ?: "Failed to validate time block"
+                 showSnackbar(errorMessage)
+             }
+             state = state.copy(isValid = false)
+         }
+
     }
 
     private fun showAddCategoryBottomSheet() {
