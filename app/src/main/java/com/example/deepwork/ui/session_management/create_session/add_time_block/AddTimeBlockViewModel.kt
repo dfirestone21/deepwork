@@ -73,11 +73,23 @@ class AddTimeBlockViewModel @Inject constructor(
             is AddTimeBlockEvent.ConfirmCancelClicked -> onConfirmCancelClicked()
             is AddTimeBlockEvent.DismissCancelClicked -> state = state.copy(showConfirmCancelDialog = false)
             is AddTimeBlockEvent.NavigateUp -> sendNavigateUpEvent()
-            is AddTimeBlockEvent.SaveClicked -> TODO()
+            is AddTimeBlockEvent.SaveClicked -> onSaveClicked()
             is AddTimeBlockEvent.CategorySelected -> onCategorySelected(event.category)
             is AddTimeBlockEvent.CategoryUnselected -> onCategoryUnselected(event.category)
             is AddTimeBlockEvent.CreateCategoryClicked -> showAddCategoryBottomSheet()
             is AddTimeBlockEvent.AddCategoryBottomSheetDismissed -> hideAddCategoryBottomSheet()
+        }
+    }
+
+    private fun onSaveClicked() {
+        val duration = parsedDuration()
+        val timeBlock = buildTimeBlockTemplate(state.selectedBlockType, duration, selectedCategories)
+        viewModelScope.launch {
+            createTimeBlock(timeBlock)
+                .onSuccess { sendNavigateUpEvent() }
+                .onError { exception, _ ->
+                    showSnackbar(exception.message ?: "Failed to save time block")
+                }
         }
     }
 
@@ -179,25 +191,31 @@ class AddTimeBlockViewModel @Inject constructor(
         }
         state = state.copy(categories = updatedSelectableCategories)
 
-        val duration = state.duration.value.toIntOrNull()?.minutes ?: Duration.ZERO
-        validateTimeBlock(duration, selectedCategories)
+        validateTimeBlock(parsedDuration(), selectedCategories)
     }
 
+    private fun buildTimeBlockTemplate(
+        blockType: ScheduledTimeBlock.BlockType,
+        duration: Duration,
+        selectedCategories: List<Category>
+    ): TimeBlockTemplate = when (blockType) {
+        ScheduledTimeBlock.BlockType.DEEP_WORK -> TimeBlockTemplate.deepWorkTemplate(
+            duration = duration,
+            categories = selectedCategories
+        )
+        ScheduledTimeBlock.BlockType.SHALLOW_WORK -> TimeBlockTemplate.shallowWorkTemplate(
+            duration = duration,
+            categories = selectedCategories
+        )
+        ScheduledTimeBlock.BlockType.BREAK -> TimeBlockTemplate.breakTemplate(
+            duration = duration
+        )
+    }
+
+    private fun parsedDuration(): Duration = state.duration.value.toIntOrNull()?.minutes ?: Duration.ZERO
+
     private fun validateTimeBlock(duration: Duration, selectedCategories: List<Category>) {
-        val blockType = state.selectedBlockType
-        val timeBlock = when (blockType) {
-            ScheduledTimeBlock.BlockType.DEEP_WORK -> TimeBlockTemplate.deepWorkTemplate(
-                duration = duration,
-                categories = selectedCategories
-            )
-            ScheduledTimeBlock.BlockType.SHALLOW_WORK -> TimeBlockTemplate.shallowWorkTemplate(
-                duration = duration,
-                categories = selectedCategories
-            )
-            ScheduledTimeBlock.BlockType.BREAK -> TimeBlockTemplate.breakTemplate(
-                duration = duration
-            )
-        }
+        val timeBlock = buildTimeBlockTemplate(state.selectedBlockType, duration, selectedCategories)
         runCatching {
             timeBlockValidator.validate(timeBlock)
         }.onSuccess {

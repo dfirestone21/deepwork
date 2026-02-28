@@ -802,4 +802,55 @@ class AddTimeBlockViewModelTest {
         assertFalse(actualCategory.isSelected)
     }
 
+    @Test
+    fun `onEvent SaveClicked should invoke createTimeBlock use case`() = runTest {
+        // given
+        coEvery { createTimeBlock(any()) } returns Result.Success(mockk())
+        initViewModel(this)
+        viewModel.onEvent(AddTimeBlockEvent.DurationChanged("30"))
+
+        // when
+        viewModel.onEvent(AddTimeBlockEvent.SaveClicked)
+        advanceUntilIdle()
+
+        // then
+        coVerify { createTimeBlock(any()) }
+    }
+
+    @Test
+    fun `onEvent SaveClicked when createTimeBlock succeeds, should send NavigateUp UiEvent`() = runTest {
+        // given
+        coEvery { createTimeBlock(any()) } returns Result.Success(mockk())
+        initViewModel(this)
+        viewModel.onEvent(AddTimeBlockEvent.DurationChanged("30"))
+
+        // when
+        val actualEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(actualEvents) }
+        viewModel.onEvent(AddTimeBlockEvent.SaveClicked)
+        advanceUntilIdle()
+
+        // then
+        assertEquals(UiEvent.NavigateUp, actualEvents.first())
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent SaveClicked when createTimeBlock fails, should send ShowSnackbar UiEvent`() = runTest {
+        // given
+        coEvery { createTimeBlock(any()) } returns Result.Error(Exception("Save failed"))
+        initViewModel(this)
+        viewModel.onEvent(AddTimeBlockEvent.DurationChanged("30"))
+
+        // when
+        val actualEvents = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(actualEvents) }
+        viewModel.onEvent(AddTimeBlockEvent.SaveClicked)
+        advanceUntilIdle()
+
+        // then
+        assert(actualEvents.first() is UiEvent.ShowSnackbar)
+        job.cancel()
+    }
+
 }
