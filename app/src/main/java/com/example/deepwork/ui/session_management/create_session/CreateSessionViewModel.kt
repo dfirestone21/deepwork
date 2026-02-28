@@ -7,10 +7,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.deepwork.domain.exception.SessionException
+import com.example.deepwork.domain.model.Result
 import com.example.deepwork.domain.model.ScheduledSession
 import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
+import com.example.deepwork.domain.usecase.session.SaveSessionUseCase
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase
 import com.example.deepwork.ui.model.InputField
 import com.example.deepwork.ui.model.TimeBlockUi
@@ -27,6 +29,7 @@ class CreateSessionViewModel @Inject constructor(
     private val createSession: CreateSessionUseCase,
     private val addTimeBlock: AddTimeBlockUseCase,
     private val validateName: ValidateSessionNameUseCase,
+    private val saveSession: SaveSessionUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -42,6 +45,7 @@ class CreateSessionViewModel @Inject constructor(
             is CreateSessionEvent.UpdateName -> updateName(event.name)
             is CreateSessionEvent.AddTimeBlock -> addTimeBlock(event.timeBlock)
             is CreateSessionEvent.FabClicked -> navigateToCreateTimeBlock()
+            is CreateSessionEvent.SaveClicked -> saveSession()
         }
     }
 
@@ -49,19 +53,10 @@ class CreateSessionViewModel @Inject constructor(
         state = state.copy(name = InputField(name))
         validateName(name)
             .onError { exception, _ ->
-                onUpdateNameFailed(exception)
+                (exception as? SessionException)?.let {
+                    state = state.copy(name = state.name.copy(message = it.message))
+                }
             }
-    }
-
-    private fun onUpdateNameFailed(exception: Throwable) {
-        when (exception) {
-            is SessionException -> {
-                state = state.copy(
-                    name = state.name.copy(message = exception.message)
-                )
-            }
-            else -> return
-        }
     }
 
     private fun addTimeBlock(timeBlock: ScheduledTimeBlock) {
@@ -81,6 +76,25 @@ class CreateSessionViewModel @Inject constructor(
         viewModelScope.launch {
             val uiEvent = UiEvent.Navigate(Routes.CREATE_TIMEBLOCK)
             _uiEvent.send(uiEvent)
+        }
+    }
+
+    private fun saveSession() {
+        viewModelScope.launch {
+            when (val result = saveSession(session)) {
+                is Result.Success -> _uiEvent.send(UiEvent.NavigateUp)
+                is Result.Error -> when (val exception = result.exception) {
+                    is SessionException.InvalidName -> {
+                        state = state.copy(
+                            name = state.name.copy(isError = true, message = exception.message)
+                        )
+                    }
+                    is SessionException.MinTimeBlocksReached -> {
+                        _uiEvent.send(UiEvent.ShowSnackbar("Add at least one work block"))
+                    }
+                    else -> _uiEvent.send(UiEvent.ShowSnackbar("Failed to save session"))
+                }
+            }
         }
     }
 }

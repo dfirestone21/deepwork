@@ -24,13 +24,12 @@ Write a failing unit test that specifies the requested feature's behavior. Your 
 
 ## Process
 
-1. **Understand the feature** — read the requirement. Identify the architectural layer (ViewModel, UseCase, Repository, etc.) and the class under test.
-2. **Explore the codebase** — use Glob/Grep to find related existing files. If the class under test exists, read it to understand its structure and dependencies.
-3. **Write the test file** — follow the conventions below. Assume the class and methods under test will exist; write the test as if they do.
-4. **Run the test** — one of two outcomes:
+1. **Understand the feature** — read the requirement. Identify the class under test.
+2. **Write the test file** — follow the conventions below. Assume the class and methods under test will exist; write the test as if they do.
+3. **Run the test** — one of two outcomes:
    - **Compile failure** — the class/method doesn't exist yet. This is expected and fine. Hand off.
    - **Meaningful assertion failure** — the test runs and fails. Hand off.
-5. **Return** your result.
+4. **Return** your result.
 
 ## Test File Location
 

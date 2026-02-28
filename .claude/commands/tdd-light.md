@@ -22,10 +22,10 @@ If the class or behavior is ambiguous, ask before proceeding. Do NOT explore the
 **Goal:** A test file that fails — either compile failure or assertion failure. Both are valid.
 
 **Rules:**
-- Write ONLY test files (`src/test/`, `src/testPruvan/`, or `src/testPpw/`)
+- Write ONLY test files (`src/test/`)
 - Do NOT create or modify any file in `src/main/`
 - Do NOT create stubs, empty classes, or placeholder implementations
-- Mirror the source path: `src/main/java/com/pruvan/<pkg>/Foo.kt` → `src/test/java/com/pruvan/<pkg>/FooTest.kt`
+- Mirror the source path: `src/main/java/com/example/deepwork/<pkg>/Foo.kt` → `src/test/java/com/example/deepwork/<pkg>/FooTest.kt`
 - If a test file already exists for this class, ADD to it — don't create a duplicate
 
 **Read only what you need.** If the class under test exists, read it. If there's an existing test file, read it. Do NOT glob/grep broadly to "understand the architecture."
@@ -43,7 +43,7 @@ If the class or behavior is ambiguous, ask before proceeding. Do NOT explore the
 
 **Run the test:**
 ```bash
-./gradlew testPpwDebugUnitTest --tests "com.pruvan.<package>.<TestClass>" 2>&1 | grep -E "(BUILD|PASSED|FAILED|> Task|tests completed|Compilation failed)" | head -10
+./gradlew test --tests "com.example.deepwork.<package>.<TestClass>" 2>&1 | grep -E "(BUILD|PASSED|FAILED|> Task|tests completed|Compilation failed)" | head -10
 ```
 
 **After running:** Report the test file path, whether it was a compile failure or assertion failure, and what behavior the test verifies. Then proceed to GREEN.
@@ -59,12 +59,12 @@ If the class or behavior is ambiguous, ask before proceeding. Do NOT explore the
 - Minimal means minimal — if the test passes, you are done
 - If the class doesn't exist, create a stub first, confirm assertion failure, then implement
 - Match the existing file's language (Java or Kotlin)
-- Follow existing patterns: `@HiltViewModel`, `@Inject constructor`, `StateFlow<UiState>`, etc.
+- Follow existing patterns: `@HiltViewModel`, `@Inject constructor`, `var state by mutableStateOf(...)`, `Channel<UiEvent>`, etc.
 - Read only the files you need to implement — the test file plus direct dependencies
 
 **Run the test after implementation:**
 ```bash
-./gradlew testPpwDebugUnitTest --tests "com.pruvan.<package>.<TestClass>" 2>&1 | grep -E "(BUILD|PASSED|FAILED|> Task|tests completed|Compilation failed)" | head -10
+./gradlew test --tests "com.example.deepwork.<package>.<TestClass>" 2>&1 | grep -E "(BUILD|PASSED|FAILED|> Task|tests completed|Compilation failed)" | head -10
 ```
 
 **If the test fails:** Read the failure, fix your implementation, run again. Do NOT modify the test.

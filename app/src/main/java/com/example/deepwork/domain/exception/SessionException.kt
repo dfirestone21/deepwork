@@ -10,4 +10,5 @@ sealed class SessionException(message: String) : Exception(message) {
     class MaxSessionDurationReached : SessionException("Max session duration reached")
     class MaxConsecutiveDeepWorkDurationReached : SessionException("Cannot schedule more than ${ScheduledSession.DURATION_MAX_CONSECUTIVE_DEEP_WORK} of consecutive deep work")
     class InvalidTimeBlockPosition : SessionException("Invalid time block position")
+    class MinTimeBlocksReached : SessionException("Session must have at least one work block")
 }

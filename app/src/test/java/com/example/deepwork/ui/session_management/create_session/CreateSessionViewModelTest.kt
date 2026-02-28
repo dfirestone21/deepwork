@@ -7,10 +7,12 @@ import com.example.deepwork.domain.model.ScheduledSession
 import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
+import com.example.deepwork.domain.usecase.session.SaveSessionUseCase
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase
 import com.example.deepwork.ui.model.TimeBlockUi
 import com.example.deepwork.ui.navigation.Routes
 import com.example.deepwork.ui.util.UiEvent
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -26,6 +28,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -34,6 +37,7 @@ class CreateSessionViewModelTest {
     private lateinit var createSession: CreateSessionUseCase
     private lateinit var addTimeBlock: AddTimeBlockUseCase
     private lateinit var validateName: ValidateSessionNameUseCase
+    private lateinit var saveSession: SaveSessionUseCase
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var testScope: TestScope
 
@@ -43,6 +47,8 @@ class CreateSessionViewModelTest {
         every { validateName(any()) } answers { Result.Success(firstArg()) }
         createSession = CreateSessionUseCase(validateName)
         addTimeBlock = AddTimeBlockUseCase()
+        saveSession = mockk()
+        coEvery { saveSession(any()) } returns Result.Success(mockk())
         savedStateHandle = mockk()
         val initialState = CreateSessionUiState()
         val initialSession = ScheduledSession.create("", System.currentTimeMillis())
@@ -189,8 +195,84 @@ class CreateSessionViewModelTest {
         job.cancel()
     }
 
+    @Test
+    fun `onEvent() SaveClicked when save succeeds, should send NavigateUp UiEvent`() = runTest {
+        // given
+        val event = CreateSessionEvent.SaveClicked
+        initViewModel(this)
+
+        // when
+        val events = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(events) }
+        viewModel.onEvent(event)
+        advanceUntilIdle()
+
+        // then
+        assertEquals(1, events.size)
+        assertEquals(UiEvent.NavigateUp, events.first())
+
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent() SaveClicked when save fails with InvalidName, should set name field isError and message`() = runTest {
+        // given
+        val errorMessage = "Session name is invalid"
+        coEvery { saveSession(any()) } returns Result.Error(SessionException.InvalidName(errorMessage))
+        val event = CreateSessionEvent.SaveClicked
+        initViewModel(this)
+
+        // when
+        viewModel.onEvent(event)
+        val uiState = uiState()
+
+        // then
+        assertTrue(uiState.name.isError)
+        assertEquals(errorMessage, uiState.name.message)
+    }
+
+    @Test
+    fun `onEvent() SaveClicked when save fails with MinTimeBlocksReached, should send ShowSnackbar UiEvent`() = runTest {
+        // given
+        coEvery { saveSession(any()) } returns Result.Error(SessionException.MinTimeBlocksReached())
+        val event = CreateSessionEvent.SaveClicked
+        initViewModel(this)
+
+        // when
+        val events = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(events) }
+        viewModel.onEvent(event)
+        advanceUntilIdle()
+
+        // then
+        assertEquals(1, events.size)
+        assertEquals(UiEvent.ShowSnackbar("Add at least one work block"), events.first())
+
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent() SaveClicked when save fails with any other exception, should send generic ShowSnackbar UiEvent`() = runTest {
+        // given
+        coEvery { saveSession(any()) } returns Result.Error(RuntimeException("Unexpected error"))
+        val event = CreateSessionEvent.SaveClicked
+        initViewModel(this)
+
+        // when
+        val events = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(events) }
+        viewModel.onEvent(event)
+        advanceUntilIdle()
+
+        // then
+        assertEquals(1, events.size)
+        assertEquals(UiEvent.ShowSnackbar("Failed to save session"), events.first())
+
+        job.cancel()
+    }
+
     private fun initViewModel(coroutineScope: TestScope, advanceUntilIdle: Boolean = true) {
-        viewModel = CreateSessionViewModel(createSession, addTimeBlock, validateName, savedStateHandle)
+        viewModel = CreateSessionViewModel(createSession, addTimeBlock, validateName, saveSession, savedStateHandle)
         testScope = coroutineScope
         if (advanceUntilIdle) coroutineScope.advanceUntilIdle()
     }

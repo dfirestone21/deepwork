@@ -28,16 +28,17 @@ class AddTimeBlockUseCase @Inject constructor() {
     }
     
     private fun validate(session: ScheduledSession, timeBlock: ScheduledTimeBlock, position: Int) {
-        val invalidPosition = position < POSITION_DEFAULT || position > session.timeBlocks.size - 1
+        // Break cannot be at the first or last position (edges of the session)
+        val effectivePosition = if (position == POSITION_DEFAULT) session.timeBlocks.size else position
+        if (timeBlock.isBreakBlock && (effectivePosition == 0 || effectivePosition == session.timeBlocks.size)) {
+            throw SessionException.InvalidBreakPosition()
+        }
+        val invalidPosition = position != POSITION_DEFAULT && (position < 0 || position > session.timeBlocks.size - 1)
         if (invalidPosition) {
             throw SessionException.InvalidTimeBlockPosition()
         }
         if (session.timeBlocks.size >= MAX_TIME_BLOCKS) {
             throw SessionException.MaxTimeBlocksReached()
-        }
-        val cantStartWithBreakBlock = timeBlock.isBreakBlock && session.timeBlocks.isEmpty()
-        if (cantStartWithBreakBlock) {
-            throw SessionException.InvalidBreakPosition()
         }
         val previousBlock = previousBlock(session, position)
         val nextBlock = nextBlock(session, position)
@@ -66,7 +67,7 @@ class AddTimeBlockUseCase @Inject constructor() {
 
         blocks.forEach { block ->
             when {
-                block.isWorkBlock -> {
+                block.type == BlockType.DEEP_WORK -> {
                     currentConsecutiveDuration += block.duration
                     if (currentConsecutiveDuration > maxConsecutiveDuration) {
                         maxConsecutiveDuration = currentConsecutiveDuration
