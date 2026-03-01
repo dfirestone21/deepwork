@@ -3,6 +3,10 @@ package com.example.deepwork.di
 import android.content.Context
 import com.example.deepwork.data.database.db.CategoryDb
 import com.example.deepwork.data.database.db.CategoryDbRoom
+import com.example.deepwork.data.database.db.SessionDao
+import com.example.deepwork.data.database.db.SessionDaoRoom
+import com.example.deepwork.data.database.db.SessionDb
+import com.example.deepwork.data.database.db.SessionDbRoom
 import com.example.deepwork.data.database.room.AppDatabase
 import com.example.deepwork.data.database.room.dao.CategoryDao
 import dagger.Binds
@@ -11,6 +15,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.example.deepwork.data.database.room.dao.SessionDao as RoomSessionDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -18,6 +23,12 @@ interface DbModule {
 
     @Binds
     fun bindCategoryDb(categoryDbRoom: CategoryDbRoom): CategoryDb
+
+    @Binds
+    fun bindSessionDb(sessionDbRoom: SessionDbRoom): SessionDb
+
+    @Binds
+    fun bindSessionDao(sessionDaoRoom: SessionDaoRoom): SessionDao
 }
 
 @Module
@@ -32,5 +43,10 @@ object DbModuleProvides {
     @Provides
     fun provideCategoryDao(appDatabase: AppDatabase): CategoryDao {
         return appDatabase.categoryDao()
+    }
+
+    @Provides
+    fun provideRoomSessionDao(appDatabase: AppDatabase): RoomSessionDao {
+        return appDatabase.sessionDao()
     }
 }

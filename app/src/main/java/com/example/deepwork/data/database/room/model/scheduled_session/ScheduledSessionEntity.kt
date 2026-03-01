@@ -28,7 +28,7 @@ data class ScheduledSessionEntity(
     val id: UUID,
 
     @ColumnInfo(name = "template_id")
-    val templateId: UUID,
+    val templateId: UUID?,
 
     @ColumnInfo(name = "name")
     val name: String,
@@ -44,6 +44,9 @@ data class ScheduledSessionEntity(
 
     @ColumnInfo(name = "actual_end_time")
     val actualEndTime: Long?,
+
+    @ColumnInfo(name = "status")
+    val status: String,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long,

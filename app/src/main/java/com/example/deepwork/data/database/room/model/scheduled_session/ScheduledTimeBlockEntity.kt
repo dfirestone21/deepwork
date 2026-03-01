@@ -40,7 +40,7 @@ data class ScheduledTimeBlockEntity(
     val sessionId: UUID,
 
     @ColumnInfo(name = "template_block_id")
-    val templateBlockId: UUID,
+    val templateBlockId: UUID?,
 
     @ColumnInfo(name = "duration_minutes")
     val durationMinutes: Long,
@@ -66,45 +66,3 @@ data class ScheduledTimeBlockEntity(
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long
 )
-
-//    companion object {
-//
-//        const val TABLE_NAME = "timeblock"
-//
-//        fun toEntity(timeBlock: TimeBlock): TimeBlockEntity {
-//            return TimeBlockEntity(
-//                id = timeBlock.id.toJavaUuid(),
-//                durationMinutes = timeBlock.duration.inWholeMinutes,
-//                blockType = timeBlock.blockType.name,
-//                createdAt = timeBlock.createdAt,
-//                updatedAt = timeBlock.updatedAt
-//            )
-//        }
-//    }
-//
-//    fun toDomain(): TimeBlock {
-//        val type = TimeBlock.BlockType.valueOf(blockType)
-//        return when (type) {
-//            TimeBlock.BlockType.DEEP -> TimeBlock.WorkBlock.DeepWorkBlock(
-//                id = id.toKotlinUuid(),
-//                duration = durationMinutes.minutes,
-//                createdAt = createdAt,
-//                updatedAt = updatedAt,
-//                categories = emptyList()
-//            )
-//            TimeBlock.BlockType.SHALLOW -> TimeBlock.WorkBlock.ShallowWorkBlock(
-//                id = id.toKotlinUuid(),
-//                duration = durationMinutes.minutes,
-//                createdAt = createdAt,
-//                updatedAt = updatedAt,
-//                categories = emptyList()
-//            )
-//            TimeBlock.BlockType.BREAK -> TimeBlock.BreakBlock(
-//                id = id.toKotlinUuid(),
-//                duration = durationMinutes.minutes,
-//                createdAt = createdAt,
-//                updatedAt = updatedAt
-//            )
-//        }
-//    }
-//}
