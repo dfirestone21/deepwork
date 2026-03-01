@@ -13,11 +13,11 @@ import kotlin.time.Duration.Companion.minutes
 
 class CalculateSessionWarningsUseCaseTest {
 
-    private lateinit var useCase: CalculateSessionWarningsUseCase
+    private lateinit var calculateWarnings: CalculateSessionWarningsUseCase
 
     @Before
     fun setUp() {
-        useCase = CalculateSessionWarningsUseCase()
+        calculateWarnings = CalculateSessionWarningsUseCase()
     }
 
     @Test
@@ -29,7 +29,7 @@ class CalculateSessionWarningsUseCaseTest {
         )
 
         // when
-        val warnings = useCase(timeBlocks)
+        val warnings = calculateWarnings(timeBlocks)
 
         // then
         assertTrue(warnings.any { it == SessionWarning(WarningLevel.YELLOW, WarningType.LONG_WORK_STRETCH) })
@@ -43,7 +43,7 @@ class CalculateSessionWarningsUseCaseTest {
         )
 
         // when
-        val warnings = useCase(timeBlocks)
+        val warnings = calculateWarnings(timeBlocks)
 
         // then
         assertTrue(warnings.any { it == SessionWarning(WarningLevel.YELLOW, WarningType.LONG_WORK_STRETCH) })
@@ -58,7 +58,7 @@ class CalculateSessionWarningsUseCaseTest {
         )
 
         // when
-        val warnings = useCase(timeBlocks)
+        val warnings = calculateWarnings(timeBlocks)
 
         // then
         assertTrue(warnings.any { it == SessionWarning(WarningLevel.YELLOW, WarningType.SHORT_BREAK) })
@@ -74,7 +74,7 @@ class CalculateSessionWarningsUseCaseTest {
         )
 
         // when
-        val warnings = useCase(timeBlocks)
+        val warnings = calculateWarnings(timeBlocks)
 
         // then
         assertTrue(warnings.any { it == SessionWarning(WarningLevel.BLUE, WarningType.LONG_BREAK) })
@@ -91,7 +91,7 @@ class CalculateSessionWarningsUseCaseTest {
         )
 
         // when
-        val warnings = useCase(timeBlocks)
+        val warnings = calculateWarnings(timeBlocks)
 
         // then
         assertTrue(warnings.any { it == SessionWarning(WarningLevel.YELLOW, WarningType.HIGH_BREAK_RATIO) })
@@ -107,7 +107,7 @@ class CalculateSessionWarningsUseCaseTest {
         )
 
         // when
-        val warnings = useCase(timeBlocks)
+        val warnings = calculateWarnings(timeBlocks)
 
         // then
         assertTrue(warnings.any { it == SessionWarning(WarningLevel.BLUE, WarningType.LONG_SESSION) })
@@ -123,7 +123,7 @@ class CalculateSessionWarningsUseCaseTest {
         )
 
         // when
-        val warnings = useCase(timeBlocks)
+        val warnings = calculateWarnings(timeBlocks)
 
         // then
         assertEquals(emptyList<SessionWarning>(), warnings)
