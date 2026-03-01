@@ -11,6 +11,7 @@ import com.example.deepwork.domain.model.Result
 import com.example.deepwork.domain.model.ScheduledSession
 import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
+import com.example.deepwork.domain.usecase.session.CalculateSessionWarningsUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
 import com.example.deepwork.domain.usecase.session.RemoveTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.SaveSessionUseCase
@@ -33,6 +34,7 @@ class CreateSessionViewModel @Inject constructor(
     private val removeTimeBlock: RemoveTimeBlockUseCase,
     private val validateName: ValidateSessionNameUseCase,
     private val saveSession: SaveSessionUseCase,
+    private val calculateSessionWarnings: CalculateSessionWarningsUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -82,7 +84,11 @@ class CreateSessionViewModel @Inject constructor(
 
     private fun applySessionUpdate(updatedSession: ScheduledSession) {
         session = updatedSession
-        state = state.copy(timeBlocks = updatedSession.timeBlocks.map { TimeBlockUi.fromDomain(it) })
+        val warnings = calculateSessionWarnings(updatedSession.timeBlocks)
+        state = state.copy(
+            timeBlocks = updatedSession.timeBlocks.map { TimeBlockUi.fromDomain(it) },
+            warnings = warnings
+        )
     }
 
     private fun navigateToCreateTimeBlock() {

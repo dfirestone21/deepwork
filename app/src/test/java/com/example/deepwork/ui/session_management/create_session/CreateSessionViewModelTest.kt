@@ -5,7 +5,11 @@ import com.example.deepwork.domain.exception.SessionException
 import com.example.deepwork.domain.model.Result
 import com.example.deepwork.domain.model.ScheduledSession
 import com.example.deepwork.domain.model.ScheduledTimeBlock
+import com.example.deepwork.domain.model.SessionWarning
+import com.example.deepwork.domain.model.WarningLevel
+import com.example.deepwork.domain.model.WarningType
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
+import com.example.deepwork.domain.usecase.session.CalculateSessionWarningsUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
 import com.example.deepwork.domain.usecase.session.RemoveTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.SaveSessionUseCase
@@ -41,6 +45,7 @@ class CreateSessionViewModelTest {
     private lateinit var removeTimeBlock: RemoveTimeBlockUseCase
     private lateinit var validateName: ValidateSessionNameUseCase
     private lateinit var saveSession: SaveSessionUseCase
+    private lateinit var calculateSessionWarnings: CalculateSessionWarningsUseCase
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var testScope: TestScope
 
@@ -53,6 +58,8 @@ class CreateSessionViewModelTest {
         removeTimeBlock = RemoveTimeBlockUseCase()
         saveSession = mockk()
         coEvery { saveSession(any()) } returns Result.Success(mockk())
+        calculateSessionWarnings = mockk()
+        every { calculateSessionWarnings(any()) } returns emptyList()
         savedStateHandle = mockk()
         val initialState = CreateSessionUiState()
         val initialSession = ScheduledSession.create("", System.currentTimeMillis())
@@ -61,6 +68,16 @@ class CreateSessionViewModelTest {
         every { savedStateHandle.get<ScheduledSession>("session") } returns initialSession
         every { savedStateHandle.set(any(), any<Any>()) } just runs
         Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @Test
+    fun `when initialized, state warnings should be empty`() = runTest {
+        // given / when
+        initViewModel(this)
+        val uiState = uiState()
+
+        // then
+        assertTrue(uiState.warnings.isEmpty())
     }
 
     @Test
@@ -176,6 +193,23 @@ class CreateSessionViewModelTest {
 
         // then
         assertNotNull(actualMessage)
+    }
+
+    @Test
+    fun `onEvent() AddTimeBlock when succeeds, state warnings should reflect result of CalculateSessionWarningsUseCase`() = runTest {
+        // given
+        val expectedWarning = SessionWarning(WarningLevel.YELLOW, WarningType.LONG_WORK_STRETCH)
+        val expectedWarnings = listOf(expectedWarning)
+        every { calculateSessionWarnings(any()) } returns expectedWarnings
+        val block = ScheduledTimeBlock.deepWorkBlock()
+        initViewModel(this)
+
+        // when
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(block))
+        val uiState = uiState()
+
+        // then
+        assertEquals(expectedWarnings, uiState.warnings)
     }
 
     @Test
@@ -362,8 +396,31 @@ class CreateSessionViewModelTest {
         job.cancel()
     }
 
+    @Test
+    fun `onEvent() RemoveTimeBlock when succeeds, state warnings should reflect result of CalculateSessionWarningsUseCase`() = runTest {
+        // given
+        val workBlock1 = ScheduledTimeBlock.deepWorkBlock()
+        val workBlock2 = ScheduledTimeBlock.deepWorkBlock()
+        initViewModel(this)
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock1))
+        advanceUntilIdle()
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock2))
+        advanceUntilIdle()
+
+        val expectedWarning = SessionWarning(WarningLevel.YELLOW, WarningType.LONG_WORK_STRETCH)
+        val expectedWarnings = listOf(expectedWarning)
+        every { calculateSessionWarnings(any()) } returns expectedWarnings
+
+        // when
+        viewModel.onEvent(CreateSessionEvent.RemoveTimeBlock(workBlock2.id))
+        val uiState = uiState()
+
+        // then
+        assertEquals(expectedWarnings, uiState.warnings)
+    }
+
     private fun initViewModel(coroutineScope: TestScope, advanceUntilIdle: Boolean = true) {
-        viewModel = CreateSessionViewModel(createSession, addTimeBlock, removeTimeBlock, validateName, saveSession, savedStateHandle)
+        viewModel = CreateSessionViewModel(createSession, addTimeBlock, removeTimeBlock, validateName, saveSession, calculateSessionWarnings, savedStateHandle)
         testScope = coroutineScope
         if (advanceUntilIdle) coroutineScope.advanceUntilIdle()
     }
