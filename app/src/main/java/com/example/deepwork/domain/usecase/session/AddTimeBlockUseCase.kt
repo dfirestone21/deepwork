@@ -28,9 +28,10 @@ class AddTimeBlockUseCase @Inject constructor() {
     }
     
     private fun validate(session: ScheduledSession, timeBlock: ScheduledTimeBlock, position: Int) {
-        // Break cannot be at the first or last position (edges of the session)
+        // Break cannot be inserted at position 0 (first block). The final session's break edge
+        // constraint (break as last block) is enforced at save time, not at add time.
         val effectivePosition = if (position == POSITION_DEFAULT) session.timeBlocks.size else position
-        if (timeBlock.isBreakBlock && (effectivePosition == 0 || effectivePosition == session.timeBlocks.size)) {
+        if (timeBlock.isBreakBlock && effectivePosition == 0) {
             throw SessionException.InvalidBreakPosition()
         }
         val invalidPosition = position != POSITION_DEFAULT && (position < 0 || position > session.timeBlocks.size - 1)

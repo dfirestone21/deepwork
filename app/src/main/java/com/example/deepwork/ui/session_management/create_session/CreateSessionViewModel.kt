@@ -12,6 +12,7 @@ import com.example.deepwork.domain.model.ScheduledSession
 import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
+import com.example.deepwork.domain.usecase.session.RemoveTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.SaveSessionUseCase
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase
 import com.example.deepwork.ui.model.InputField
@@ -19,6 +20,7 @@ import com.example.deepwork.ui.model.TimeBlockUi
 import com.example.deepwork.ui.navigation.Routes
 import com.example.deepwork.ui.util.UiEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -28,6 +30,7 @@ import javax.inject.Inject
 class CreateSessionViewModel @Inject constructor(
     private val createSession: CreateSessionUseCase,
     private val addTimeBlock: AddTimeBlockUseCase,
+    private val removeTimeBlock: RemoveTimeBlockUseCase,
     private val validateName: ValidateSessionNameUseCase,
     private val saveSession: SaveSessionUseCase,
     private val savedStateHandle: SavedStateHandle
@@ -44,6 +47,7 @@ class CreateSessionViewModel @Inject constructor(
         when (event) {
             is CreateSessionEvent.UpdateName -> updateName(event.name)
             is CreateSessionEvent.AddTimeBlock -> addTimeBlock(event.timeBlock)
+            is CreateSessionEvent.RemoveTimeBlock -> removeTimeBlock(event.blockId)
             is CreateSessionEvent.FabClicked -> navigateToCreateTimeBlock()
             is CreateSessionEvent.SaveClicked -> saveSession()
         }
@@ -62,14 +66,23 @@ class CreateSessionViewModel @Inject constructor(
     private fun addTimeBlock(timeBlock: ScheduledTimeBlock) {
         viewModelScope.launch {
             addTimeBlock(session, timeBlock)
-                .onSuccess { updatedSession ->
-                    session = updatedSession
-                    val updatedTimeBlocks = updatedSession.timeBlocks.map { TimeBlockUi.fromDomain(it) }
-                    state = state.copy(timeBlocks = updatedTimeBlocks)
-                }.onError { exception, _ ->
-                    state = state.copy(message = exception.message)
-                }
+                .onSuccess { updatedSession -> applySessionUpdate(updatedSession) }
+                .onError { exception, _ -> state = state.copy(message = exception.message) }
         }
+    }
+
+    private fun removeTimeBlock(blockId: Uuid) {
+        viewModelScope.launch {
+            when (val result = removeTimeBlock(session, blockId)) {
+                is Result.Success -> applySessionUpdate(result.value)
+                is Result.Error -> _uiEvent.send(UiEvent.ShowSnackbar(result.exception.message ?: "Failed to remove block"))
+            }
+        }
+    }
+
+    private fun applySessionUpdate(updatedSession: ScheduledSession) {
+        session = updatedSession
+        state = state.copy(timeBlocks = updatedSession.timeBlocks.map { TimeBlockUi.fromDomain(it) })
     }
 
     private fun navigateToCreateTimeBlock() {

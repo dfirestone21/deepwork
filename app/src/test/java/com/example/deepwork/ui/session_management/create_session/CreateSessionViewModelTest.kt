@@ -7,6 +7,7 @@ import com.example.deepwork.domain.model.ScheduledSession
 import com.example.deepwork.domain.model.ScheduledTimeBlock
 import com.example.deepwork.domain.usecase.session.AddTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.CreateSessionUseCase
+import com.example.deepwork.domain.usecase.session.RemoveTimeBlockUseCase
 import com.example.deepwork.domain.usecase.session.SaveSessionUseCase
 import com.example.deepwork.domain.usecase.session.validate.ValidateSessionNameUseCase
 import com.example.deepwork.ui.model.TimeBlockUi
@@ -17,6 +18,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -36,6 +38,7 @@ class CreateSessionViewModelTest {
     private lateinit var viewModel: CreateSessionViewModel
     private lateinit var createSession: CreateSessionUseCase
     private lateinit var addTimeBlock: AddTimeBlockUseCase
+    private lateinit var removeTimeBlock: RemoveTimeBlockUseCase
     private lateinit var validateName: ValidateSessionNameUseCase
     private lateinit var saveSession: SaveSessionUseCase
     private lateinit var savedStateHandle: SavedStateHandle
@@ -47,6 +50,7 @@ class CreateSessionViewModelTest {
         every { validateName(any()) } answers { Result.Success(firstArg()) }
         createSession = CreateSessionUseCase(validateName)
         addTimeBlock = AddTimeBlockUseCase()
+        removeTimeBlock = RemoveTimeBlockUseCase()
         saveSession = mockk()
         coEvery { saveSession(any()) } returns Result.Success(mockk())
         savedStateHandle = mockk()
@@ -271,8 +275,95 @@ class CreateSessionViewModelTest {
         job.cancel()
     }
 
+    @Test
+    fun `onEvent() RemoveTimeBlock when block ID is valid, should remove block from state timeBlocks`() = runTest {
+        // given
+        val workBlock1 = ScheduledTimeBlock.deepWorkBlock()
+        val workBlock2 = ScheduledTimeBlock.deepWorkBlock()
+        initViewModel(this)
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock1))
+        advanceUntilIdle()
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock2))
+        advanceUntilIdle()
+
+        // when
+        viewModel.onEvent(CreateSessionEvent.RemoveTimeBlock(workBlock1.id))
+        val uiState = uiState()
+
+        // then
+        assertEquals(1, uiState.timeBlocks.size)
+    }
+
+    @Test
+    fun `onEvent() RemoveTimeBlock when block is the last work block, should send ShowSnackbar UiEvent`() = runTest {
+        // given
+        val workBlock = ScheduledTimeBlock.deepWorkBlock()
+        initViewModel(this)
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock))
+        advanceUntilIdle()
+
+        // when
+        val events = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(events) }
+        viewModel.onEvent(CreateSessionEvent.RemoveTimeBlock(workBlock.id))
+        advanceUntilIdle()
+
+        // then
+        assertTrue(events.any { it is UiEvent.ShowSnackbar })
+
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent() RemoveTimeBlock when block ID is unknown, should send ShowSnackbar UiEvent`() = runTest {
+        // given
+        val workBlock = ScheduledTimeBlock.deepWorkBlock()
+        val unknownId = Uuid.random()
+        initViewModel(this)
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock))
+        advanceUntilIdle()
+
+        // when
+        val events = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(events) }
+        viewModel.onEvent(CreateSessionEvent.RemoveTimeBlock(unknownId))
+        advanceUntilIdle()
+
+        // then
+        assertTrue(events.any { it is UiEvent.ShowSnackbar })
+
+        job.cancel()
+    }
+
+    @Test
+    fun `onEvent() RemoveTimeBlock when removal would leave a break at an edge, should send ShowSnackbar UiEvent`() = runTest {
+        // given
+        // Arrange: [workBlock1, breakBlock, workBlock2] — removing workBlock2 leaves breakBlock at the end
+        val workBlock1 = ScheduledTimeBlock.deepWorkBlock()
+        val breakBlock = ScheduledTimeBlock.breakBlock()
+        val workBlock2 = ScheduledTimeBlock.deepWorkBlock()
+        initViewModel(this)
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock1))
+        advanceUntilIdle()
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(breakBlock))
+        advanceUntilIdle()
+        viewModel.onEvent(CreateSessionEvent.AddTimeBlock(workBlock2))
+        advanceUntilIdle()
+
+        // when
+        val events = mutableListOf<UiEvent>()
+        val job = launch { viewModel.uiEvent.toList(events) }
+        viewModel.onEvent(CreateSessionEvent.RemoveTimeBlock(workBlock2.id))
+        advanceUntilIdle()
+
+        // then
+        assertTrue(events.any { it is UiEvent.ShowSnackbar })
+
+        job.cancel()
+    }
+
     private fun initViewModel(coroutineScope: TestScope, advanceUntilIdle: Boolean = true) {
-        viewModel = CreateSessionViewModel(createSession, addTimeBlock, validateName, saveSession, savedStateHandle)
+        viewModel = CreateSessionViewModel(createSession, addTimeBlock, removeTimeBlock, validateName, saveSession, savedStateHandle)
         testScope = coroutineScope
         if (advanceUntilIdle) coroutineScope.advanceUntilIdle()
     }

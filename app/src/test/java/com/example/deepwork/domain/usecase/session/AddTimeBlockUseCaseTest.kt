@@ -197,8 +197,8 @@ class AddTimeBlockUseCaseTest {
     }
 
     @Test
-    fun `when adding break block at POSITION_DEFAULT to session with existing work blocks, should return InvalidBreakPosition error`() = runTest {
-        // given
+    fun `when adding break block at POSITION_DEFAULT to session with existing work blocks, should succeed`() = runTest {
+        // given - break edge constraint is enforced at save time, not at add time
         val workBlock = ScheduledTimeBlock.deepWorkBlock()
         session = addTimeBlock(session, workBlock).getOrThrow()
         val breakBlock = ScheduledTimeBlock.breakBlock()
@@ -206,11 +206,8 @@ class AddTimeBlockUseCaseTest {
         // when
         val result = addTimeBlock(session, breakBlock, AddTimeBlockUseCase.POSITION_DEFAULT)
 
-        // then
-        assert(result is Result.Error) { "Expected Result.Error but got $result" }
-        assert((result as Result.Error).exception is SessionException.InvalidBreakPosition) {
-            "Expected InvalidBreakPosition but got ${result.exception}"
-        }
+        // then - break can be appended after a work block; the user may add another work block after it
+        assert(result is Result.Success) { "Expected Result.Success but got $result" }
     }
 
     @Test

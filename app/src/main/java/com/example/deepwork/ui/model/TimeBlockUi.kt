@@ -3,8 +3,10 @@ package com.example.deepwork.ui.model
 import com.example.deepwork.domain.model.Category
 import com.example.deepwork.domain.model.ScheduledTimeBlock
 import kotlin.time.Duration
+import kotlin.uuid.Uuid
 
 data class TimeBlockUi(
+    val id: Uuid,
     val duration: Duration,
     val categories: List<Category>,
     val type: Type
@@ -16,6 +18,7 @@ data class TimeBlockUi(
 
         fun fromDomain(timeBlock: ScheduledTimeBlock): TimeBlockUi {
             return TimeBlockUi(
+                id = timeBlock.id,
                 duration = timeBlock.duration,
                 categories = timeBlock.categories,
                 type = typeFrom(timeBlock)
