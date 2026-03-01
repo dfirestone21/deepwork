@@ -19,21 +19,19 @@ if [[ ! "$FILE_PATH" =~ /src/main/ ]]; then
 fi
 
 # Derive package and class name from path
-# e.g. .../src/main/java/com/example/deepwork/usecase/MyUseCase.kt
 JAVA_RELATIVE=$(echo "$FILE_PATH" | sed 's|.*src/main/java/||')
-# → com/example/deepwork/usecase/MyUseCase.kt
 
 CLASS_FILE=$(basename "$JAVA_RELATIVE")
-CLASS_NAME="${CLASS_FILE%.*}"       # MyUseCase
-TEST_CLASS="${CLASS_NAME}Test"      # MyUseCaseTest
+CLASS_NAME="${CLASS_FILE%.*}"
+TEST_CLASS="${CLASS_NAME}Test"
 
-PACKAGE_PATH=$(dirname "$JAVA_RELATIVE")        # com/example/deepwork/usecase
-PACKAGE=$(echo "$PACKAGE_PATH" | tr '/' '.')    # com.example.deepwork.usecase
-FULL_TEST_CLASS="${PACKAGE}.${TEST_CLASS}"       # com.example.deepwork.usecase.MyUseCaseTest
+PACKAGE_PATH=$(dirname "$JAVA_RELATIVE")
+PACKAGE=$(echo "$PACKAGE_PATH" | tr '/' '.')
+FULL_TEST_CLASS="${PACKAGE}.${TEST_CLASS}"
 
 PROJECT_DIR="$CLAUDE_PROJECT_DIR"
 
-# Check if a test file exists for this class anywhere in the project
+# Check if a test file exists for this class
 TEST_FILE=$(find "$PROJECT_DIR" \
     \( -path "*/src/test/java/${PACKAGE_PATH}/${TEST_CLASS}.kt" \
     -o -path "*/src/test/java/${PACKAGE_PATH}/${TEST_CLASS}.java" \

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # .claude/hooks/skill-eval.sh
 # Injected before every prompt via UserPromptSubmit hook.
-# Forces Claude to evaluate available skills before responding,
-# increasing TDD skill activation from ~20% to ~84%.
+# Forces Claude to evaluate available skills before responding.
 
 # Consume stdin (required by Claude Code hook protocol)
 cat /dev/stdin > /dev/null
